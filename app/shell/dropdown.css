@@ -1,0 +1,124 @@
+/* ═══════════════════════════════════════════════
+   magmacrunch media — retro dropdown
+   ware/shell/dropdown.css
+
+   The absolute-positioned, max-height-transition dropdown used by
+   album-art-maker and media-search. Pair it with ware/shell/dropdown.js.
+
+   pixel-process deliberately does NOT load this. Its options are
+   position:fixed and toggle display rather than animating max-height,
+   because they have to escape a clipping panel — a genuinely different
+   widget that happens to share class names. It keeps its own rules and
+   uses only the shared JS.
+
+   Tokens, all with defaults matching album-art-maker:
+     --dd-border-w   border width on the trigger and the option list
+     --dd-accent     open/hover colour
+     --dd-glow       accent at low alpha, for the box-shadow
+     --dd-tint       accent at very low alpha, for option hover/active fills
+     --dd-font-size  trigger label size (options are always 7px)
+   ═══════════════════════════════════════════════ */
+
+:root {
+    --dd-border-w:  2px;
+    --dd-accent:    var(--accent);
+    --dd-glow:      rgba(160,160,176,0.2);
+    --dd-glow-open: rgba(160,160,176,0.3);
+    --dd-tint:      rgba(160,160,176,0.1);
+    --dd-tint-soft: rgba(160,160,176,0.06);
+    --dd-font-size: 8px;
+    --dd-arrow:     var(--accent);
+}
+
+.custom-dropdown {
+    position: relative;
+    width: 100%;
+    user-select: none;
+}
+
+.dropdown-selected {
+    background: var(--surface);
+    border: var(--dd-border-w) solid var(--border);
+    color: var(--text);
+    padding: 8px 10px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: var(--dd-font-size);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.15s;
+}
+
+.dropdown-selected:hover {
+    border-color: var(--dd-accent);
+    box-shadow: 0 0 10px var(--dd-glow);
+}
+
+.custom-dropdown.open .dropdown-selected {
+    border-color: var(--dd-accent);
+    box-shadow: 0 0 12px var(--dd-glow-open);
+}
+
+.dropdown-arrow {
+    color: var(--dd-arrow);
+    font-size: 8px;
+    transition: transform 0.2s;
+}
+
+.custom-dropdown.open .dropdown-arrow {
+    transform: rotate(180deg);
+}
+
+.dropdown-options {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--surface);
+    border: var(--dd-border-w) solid var(--dd-accent);
+    border-top: none;
+    margin-top: calc(-1 * var(--dd-border-w));
+    max-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    transition: max-height 0.25s ease-out;
+    z-index: 50;
+}
+
+.custom-dropdown.open .dropdown-options {
+    max-height: 240px;
+}
+
+.dropdown-option {
+    padding: 7px 10px;
+    cursor: pointer;
+    transition: all 0.1s;
+    border-bottom: 1px solid var(--border);
+    font-family: 'Press Start 2P', monospace;
+    font-size: 7px;
+    color: var(--dim);
+    white-space: nowrap;
+}
+
+.dropdown-option:last-child {
+    border-bottom: none;
+}
+
+.dropdown-option:hover {
+    background: var(--dd-tint);
+    border-left: 3px solid var(--dd-accent);
+    color: var(--text);
+    padding-left: 7px;
+}
+
+.dropdown-option.active {
+    color: var(--dd-accent);
+    border-left: 3px solid var(--dd-accent);
+    padding-left: 7px;
+    background: var(--dd-tint-soft);
+}
+
+.dropdown-options::-webkit-scrollbar { width: 4px; }
+.dropdown-options::-webkit-scrollbar-track { background: transparent; }
+.dropdown-options::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }

@@ -1,0 +1,9 @@
+node_modules/
+desktop/src-tauri/target/
+desktop/src-tauri/gen/
+dist/
+*.log
+.DS_Store
+
+# Local Claude Code config, not shared
+.claude/

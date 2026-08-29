@@ -1,0 +1,37 @@
+[package]
+name = "gatefold"
+version = "1.9.0"
+description = "GATE//FOLD"
+authors = ["magmacrunch media"]
+license = "PolyForm-Noncommercial-1.0.0"
+edition = "2021"
+rust-version = "1.77"
+
+# The library is what the mobile entry points would call; on desktop main.rs
+# just delegates to it. Keeping the split now costs nothing and is the shape
+# tauri's own templates use.
+[lib]
+name = "gatefold_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+# Native Open/Save pickers. The only plugin taken by default: everything else
+# the app needs from the OS is a handful of file operations, and those are
+# custom commands over magma_kit::fs so the permission surface stays small and
+# the paths stay explicit.
+tauri-plugin-dialog = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# The shared kit — a sibling checkout. See magma-kit/README.md.
+magma-kit = { path = "../../../magma-kit/crate", features = ["dialog"] }
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true

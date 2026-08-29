@@ -1,0 +1,991 @@
+/* ═══════════════════════════════════════════════
+   GATE//FOLD — app styles
+
+   Chrome (reset, header, glitch title, tool nav, workspace, footer) comes
+   from shell/app-shell.css; the dropdown from shell/dropdown.css. Both are
+   byte-copies of ware/shell in the website repo and are linked ahead of this
+   file. Only tokens are overridden here.
+
+   Rules for the desktop build sit at the END of this file under html.desktop
+   (kit/bridge-core.js sets that class). The shell stays byte-identical; the
+   app subtracts what a bundled window has no use for.
+   ═══════════════════════════════════════════════ */
+
+/* ── PALETTE ── */
+:root {
+    --bg:        #080808;
+    --surface:   #111118;
+    --panel:     #15151d;
+    --border:    #2a2a3a;
+    --text:      #f0ead8;
+    --dim:       #6a6a7a;
+    --accent:    #a0a0b0;
+    --rose:      #ff3d6e;
+    --cyan:      #00f5ff;
+    --panel-w:   240px;
+}
+
+/* Shell defaults already match this app, so there is nothing to override.
+   The canvas tools suppress text selection; media-search does not, which is
+   why the shell leaves it to each app. */
+body {
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* The shell's .workspace has no min-height; this app needs its flex children
+   able to shrink below their content. */
+.workspace {
+    min-height: 0;
+}
+
+/* ── PANELS ── */
+.panel {
+    width: var(--panel-w);
+    background: var(--panel);
+    border-right: 2px solid var(--border);
+    padding: 12px 10px;
+    overflow-y: auto;
+    flex-shrink: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.props-panel {
+    border-right: none;
+    border-left: 2px solid var(--border);
+    overflow-x: hidden;
+}
+
+.panel-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 9px;
+    color: var(--accent);
+    letter-spacing: 0.2em;
+    margin-bottom: 4px;
+}
+
+.panel-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 2px 0;
+}
+
+/* ── TOOL BUTTONS ── */
+.tool-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+}
+
+.tool-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 6px 4px;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 4px;
+    color: var(--dim);
+    font-family: 'Press Start 2P', monospace;
+    font-size: 6px;
+    cursor: pointer;
+    transition: all 0.12s;
+}
+
+.tool-btn:hover {
+    border-color: var(--accent);
+    color: var(--text);
+}
+
+.tool-btn.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(160,160,176,0.08);
+    box-shadow: 0 0 12px rgba(160,160,176,0.1), inset 0 0 12px rgba(160,160,176,0.03);
+}
+
+.tool-icon {
+    font-size: 14px;
+    line-height: 1;
+}
+
+.tool-name {
+    font-size: 6px;
+    letter-spacing: 0.1em;
+}
+
+/* ── SHAPES POPUP ── */
+.shapes-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 4px;
+    color: var(--accent);
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px;
+    cursor: pointer;
+    transition: all 0.12s;
+}
+.shapes-btn:hover {
+    border-color: var(--accent);
+    color: var(--text);
+}
+.shapes-btn-arrow {
+    font-size: 10px;
+    opacity: 0.6;
+}
+
+.shapes-popup {
+    display: none;
+    position: fixed;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px;
+    z-index: 50;
+    min-width: 220px;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+.shapes-popup.open {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.shapes-popup-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+}
+
+.popup-section-label {
+    grid-column: 1 / -1;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 7px;
+    color: var(--dim);
+    letter-spacing: 0.2em;
+    padding: 4px 0 2px;
+    border-top: 1px solid var(--border);
+}
+.popup-section-label:first-child {
+    border-top: none;
+}
+
+.shape-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 8px;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 4px;
+    color: var(--dim);
+    font-family: 'Press Start 2P', monospace;
+    font-size: 6px;
+    cursor: pointer;
+    transition: all 0.12s;
+}
+.shape-btn:hover {
+    border-color: var(--accent);
+    color: var(--text);
+}
+.shape-btn.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(160,160,176,0.08);
+}
+
+/* ── REFERENCE IMAGE ── */
+.ref-upload-btn {
+    width: 100%;
+    padding: 8px;
+    background: var(--surface);
+    border: 2px dashed var(--border);
+    border-radius: 4px;
+    color: var(--dim);
+    font-family: 'Press Start 2P', monospace;
+    font-size: 7px;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.05em;
+}
+.ref-upload-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.ref-preview-wrap {
+    position: relative;
+    display: none;
+    border: 2px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+}
+.ref-preview-wrap.visible {
+    display: block;
+}
+
+.ref-canvas {
+    width: 100%;
+    display: block;
+    cursor: crosshair;
+    image-rendering: auto;
+}
+
+.ref-clear-btn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 20px;
+    height: 20px;
+    background: rgba(0,0,0,0.7);
+    border: 1px solid var(--rose);
+    border-radius: 3px;
+    color: var(--rose);
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.ref-clear-btn:hover {
+    background: var(--rose);
+    color: #000;
+}
+
+.ref-hint {
+    font-size: 6px;
+    color: var(--dim);
+    text-align: center;
+    line-height: 1.4;
+    margin: 0;
+    display: none;
+}
+.ref-hint.visible {
+    display: block;
+}
+
+/* ── CENTER AREA ── */
+.center-area {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    min-width: 0;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Generates no box of its own, so the canvas becomes the flex item of
+   .center-area directly and its percentage max-* resolve against the space
+   that actually exists.
+
+   This wrapper used to be an inline-block with auto height sitting between
+   the two. A percentage max-height against an auto-height parent is
+   unresolvable, so the canvas could not be sized from its container and was
+   pinned to `calc(100vh - 80px)` instead — a guess at the surrounding chrome
+   that was 35px short of the real 115px (55 header + 33 footer + 20/20
+   .center-area padding). The canvas stayed square but .center-area clips with
+   overflow: hidden, so 17.5px was cut off the top *and* bottom at any window
+   height where the height constraint binds — 640x640 drawn, 640x605 visible at
+   1280x720. It read as a canvas that was not square, and anything placed near
+   the top or bottom edge was invisible while editing but present on export.
+
+   The wrapper holds nothing but the canvas (verified — no JS touches
+   #canvasWrap), so the shadow moves to the canvas, where it also hugs the
+   artwork properly instead of a box that no longer matches it.
+
+   Do not give this a box back without re-checking the clipping: the sibling
+   pattern in pixel-process works only because *its* .canvas-wrap sits in a
+   column flex container and gets a definite height from `flex: 1`. Here
+   .center-area is a row, so the same rules leave the height auto again. */
+.canvas-wrap {
+    display: contents;
+}
+
+#mainCanvas {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    cursor: crosshair;
+    image-rendering: auto;
+    display: block;
+    box-shadow: 0 0 40px rgba(0,0,0,0.6);
+}
+
+/* ── DIALOGS ──
+   Real <dialog>s on MagmaKit.modal rather than the old position:fixed overlay
+   div. showModal() supplies the top layer, the centring and the backdrop, so
+   what used to be .modal-overlay is now ::backdrop and one :not([open]) rule
+   — a dialog is display:none until open, and .modal-box's display:flex would
+   otherwise override that and paint it over the app at load. */
+dialog.modal-box::backdrop {
+    background: rgba(0, 0, 0, 0.7);
+}
+
+dialog.modal-box:not([open]) {
+    display: none;
+}
+
+.modal-box {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+    min-width: 340px;
+    max-width: 90vw;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    box-sizing: border-box;
+}
+
+.modal-header {
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 0.2em;
+}
+
+.modal-textarea {
+    width: 100%;
+    min-height: 80px;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: 'Press Start 2P', monospace;
+    font-size: 16px;
+    padding: 10px;
+    outline: none;
+    resize: vertical;
+    line-height: 1.4;
+}
+.modal-textarea:focus {
+    border-color: var(--accent);
+}
+
+.modal-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.modal-btns {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 4px;
+    flex-wrap: wrap;
+}
+.modal-btns .action-btn {
+    flex: none;
+    padding: 10px 20px;
+}
+.modal-btns .export-btn {
+    flex: none;
+    padding: 10px 20px;
+}
+
+/* ── PROPERTY CONTROLS ── */
+/* THIS RULE MUST COME BEFORE ANY display: RULE BELOW, AND IT NEEDS THE
+   !important.
+
+   The panel marks a group irrelevant with the `hidden` attribute, and
+   ui/props.js sets .hidden on ten of them as the tool and selection change.
+   The UA stylesheet's `[hidden] { display: none }` is a USER-AGENT rule, so
+   any author rule that sets display beats it — and `.prop-group` sets
+   display: flex. The result is that every one of those ten groups has always
+   been visible: FREQUENCY, WAVE MODE, STEPS, DUTY CYCLE, ROTATION, OPACITY,
+   FIT TO CANVAS, LAYER ORDER, FONT and FONT SIZE all showed with nothing
+   selected, and updatePropsVisibility() was inert from the day it was
+   written. Verified against the live tool, where it is still true.
+
+   One line, and the function it re-enables was already correct. */
+[hidden] {
+    display: none !important;
+}
+
+.prop-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.canvas-bg-row {
+    display: flex;
+    gap: 8px;
+}
+
+.canvas-bg-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.prop-label {
+    font-size: 8px;
+    color: var(--dim);
+    letter-spacing: 0.15em;
+}
+
+.file-input {
+    width: 100%;
+    padding: 8px 10px;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: 'Courier Prime', monospace;
+    font-size: 11px;
+    outline: none;
+}
+.file-input:focus {
+    border-color: var(--accent);
+}
+
+.color-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.color-input {
+    width: 32px;
+    height: 24px;
+    border: 2px solid var(--border);
+    border-radius: 3px;
+    background: none;
+    cursor: pointer;
+    padding: 0;
+}
+.color-input::-webkit-color-swatch-wrapper { padding: 2px; }
+.color-input::-webkit-color-swatch { border: none; border-radius: 2px; }
+
+.color-hex-input {
+    font-family: 'Courier Prime', monospace;
+    font-size: 11px;
+    color: var(--dim);
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 2px;
+    padding: 2px 4px;
+    width: 70px;
+    outline: none;
+}
+.color-hex-input:focus {
+    border-color: var(--accent);
+    color: var(--text);
+}
+
+.no-fill-btn {
+    width: 24px;
+    height: 24px;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 3px;
+    color: var(--dim);
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+.no-fill-btn:hover { border-color: var(--rose); color: var(--rose); }
+.no-fill-btn.active { border-color: var(--rose); color: var(--rose); background: rgba(255,61,110,0.1); }
+
+.range-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.rot-btn {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 4px;
+    color: var(--accent);
+    font-family: 'Press Start 2P', monospace;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.12s;
+    line-height: 1;
+}
+.rot-btn:hover {
+    border-color: var(--accent);
+    color: var(--text);
+}
+.rot-btn:active {
+    background: rgba(160,160,176,0.15);
+}
+
+.range-input {
+    flex: 1;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    outline: none;
+}
+.range-input::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    background: var(--accent);
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.range-val {
+    font-family: 'Courier Prime', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    min-width: 28px;
+    text-align: right;
+}
+
+.prop-select {
+    width: 100%;
+    padding: 10px 30px 10px 10px;
+    background-color: var(--surface);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23a0a0b0' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    border: 2px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px !important;
+    cursor: pointer;
+    outline: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+.prop-select:focus { border-color: var(--accent); }
+.prop-select option { background: var(--surface); color: var(--text); font-family: inherit; }
+
+/* ── ACTION BUTTONS ── */
+.action-btns {
+    display: flex;
+    gap: 6px;
+}
+
+.action-btn {
+    flex: 1;
+    padding: 6px 6px;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 4px;
+    color: var(--dim);
+    font-family: 'Press Start 2P', monospace;
+    font-size: 6px;
+    cursor: pointer;
+    transition: all 0.12s;
+    letter-spacing: 0.05em;
+}
+.action-btn:hover { border-color: var(--accent); color: var(--text); }
+.action-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(160,160,176,0.08); }
+.action-btn.danger:hover { border-color: var(--rose); color: var(--rose); }
+
+.export-btn {
+    width: 100%;
+    padding: 12px;
+    background: var(--accent);
+    border: none;
+    border-radius: 4px;
+    color: #000;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    cursor: pointer;
+    letter-spacing: 0.1em;
+    transition: all 0.15s;
+}
+.export-btn:hover {
+    background: var(--text);
+}
+
+/* ── FOOTER ── */
+/* padding, border and .footer-text come from the shell. */
+footer {
+    text-align: center;
+}
+
+/* ── SCROLLBAR ── */
+.panel::-webkit-scrollbar { width: 6px; }
+.panel::-webkit-scrollbar-track { background: transparent; }
+.panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.panel::-webkit-scrollbar-thumb:hover { background: var(--dim); }
+
+.shapes-popup::-webkit-scrollbar { width: 6px; }
+.shapes-popup::-webkit-scrollbar-track { background: transparent; }
+.shapes-popup::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.shapes-popup::-webkit-scrollbar-thumb:hover { background: var(--dim); }
+
+/* ── CURSOR STATES ── */
+body.tool-select #mainCanvas { cursor: default; }
+body.tool-rect #mainCanvas,
+body.tool-circle #mainCanvas,
+body.tool-line #mainCanvas { cursor: crosshair; }
+body.tool-text #mainCanvas { cursor: text; }
+body.dragging #mainCanvas { cursor: grabbing; }
+
+/* ── CHROME GLITCH, SHAPE BUTTON SIZE ──
+   The .chrome effect itself lives in the shell; only the icon sizing is
+   specific to this app's shape buttons. */
+.shape-btn .chrome {
+    font-size: 16px;
+    line-height: 1;
+}
+
+.shape-btn .chrome::before,
+.shape-btn .chrome::after {
+    font-size: 16px;
+    line-height: 1;
+}
+
+
+/* ── COLLAPSIBLE SECTIONS ──
+   The chevron in a .panel-label. A button rather than a <details> because the
+   menu bar's View items proxy it by clicking it, and that only works if the
+   toggle is one element whose .active class IS the state. */
+.section-toggle {
+    background: none;
+    border: none;
+    color: var(--dim);
+    font-size: 10px;
+    line-height: 1;
+    padding: 2px 4px;
+    cursor: pointer;
+    transition: color 0.1s, transform 0.1s;
+}
+
+.section-toggle:hover { color: var(--text); }
+
+/* Collapsed points right, open points down. The class is the state. */
+.section-toggle:not(.active) { transform: rotate(-90deg); }
+
+.layers-section[hidden],
+.ref-section[hidden] { display: none; }
+
+
+/* ── LAYERS ──
+   FULL only; see core/tier.js. Rendered top-first, because the array is
+   bottom-first z-order and a list that reads upside down against the canvas
+   is worse than no list. Rows are built with MagmaKit.dom.el(). */
+.layers-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    /* Capped rather than free: the properties below are the panel's real job,
+       and a 40-element cover would otherwise push every one of them off. */
+    max-height: 220px;
+    overflow-y: auto;
+    margin-bottom: 6px;
+}
+
+.layer-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 6px;
+    background: var(--surface);
+    border: 1px solid transparent;
+    border-left: 2px solid transparent;
+    cursor: pointer;
+    font-size: 9px;
+    color: var(--dim);
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.layer-row:hover { color: var(--text); border-color: var(--border); }
+
+.layer-row.selected {
+    color: var(--text);
+    background: var(--panel);
+    border-left-color: var(--rose);
+}
+
+/* The type in the app's display face, the name in its text face. Without the
+   two faces a row of identical-width glyphs reads as one long word. */
+.layer-kind {
+    flex: 0 0 auto;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 7px;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+}
+
+.layer-name {
+    flex: 1 1 auto;
+    font-family: 'Courier Prime', monospace;
+    font-size: 11px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Dimmed, not removed: a hidden element still holds its place in the stack,
+   and a row that vanished would read as a delete. */
+.layer-row.hidden .layer-kind,
+.layer-row.hidden .layer-name { opacity: 0.35; }
+
+.layer-vis {
+    flex: 0 0 auto;
+    background: none;
+    border: none;
+    color: var(--dim);
+    font-size: 10px;
+    line-height: 1;
+    padding: 0 2px;
+    cursor: pointer;
+}
+
+.layer-vis:hover { color: var(--rose); }
+
+.layers-list .no-data {
+    padding: 8px 6px;
+    font-size: 9px;
+    color: var(--dim);
+}
+
+
+/* ── DIALOG MESSAGE ── */
+.modal-message {
+    font-family: 'Courier Prime', monospace;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: var(--text);
+}
+
+
+/* ── IMPORT: DROP TARGET ──
+   The canvas accepts a dropped image. The feedback goes on the canvas element
+   itself, not on .canvas-wrap, which has no box — see the display:contents
+   note above, and do not give it one. */
+#mainCanvas.drag-over {
+    outline: 2px dashed var(--rose);
+    outline-offset: -2px;
+}
+
+
+/* ═══════════════════════════════════════════════
+   THE DESKTOP BUILD
+
+   html.desktop is set by kit/bridge-core.js, in <head>, before the body
+   paints. Everything below subtracts or adds for the bundled window. The
+   browser (LITE) build sees none of it and stays exactly what is live on
+   magmacrunch.com today.
+   ═══════════════════════════════════════════════ */
+
+/* `../utilities/` does not exist inside the bundle, so on the desktop the back
+   link is not merely redundant chrome, it is a link that cannot resolve. The
+   footer is a site credit bar; in a bundle the installer, the title bar and
+   the Apps list carry the version and the publisher. The mobile notice is
+   about devices, and a narrow window is a choice rather than a phone. */
+html.desktop .tool-nav,
+html.desktop footer,
+html.desktop .mobile-notice {
+    display: none;
+}
+
+/* The shell's rule is that it defines tokens and the app overrides them on
+   :root, because a body class does not reliably beat a :root fallback.
+   `desktop` is on <html>, which IS :root, so this is that same override
+   narrowed to the one build. */
+:root.desktop {
+    --title-size: 10px;
+    --title-glow: none;
+}
+
+/* A website leads with the wordmark because the visitor may not know what they
+   opened. An app does not have that problem — the title bar and the taskbar
+   have both said GATE//FOLD before the window appears. So the strip stops
+   being a masthead and becomes what a tool needs there: the menus, and the
+   name of the file that is open. */
+html.desktop header {
+    padding: 8px 16px;
+}
+
+/* The glitch is two animated copies of the wordmark running for as long as the
+   window is open. That reads as personality on a landing page and as a
+   distraction an hour into placing type on a cover. Dropping the layers keeps
+   the colour and the typeface; it just stops flickering at the user. */
+html.desktop h1.glitch::before,
+html.desktop h1.glitch::after {
+    content: none;
+}
+
+/* The open file's name and its dirty marker. Hidden in the browser, where
+   there is no file to name. */
+.doc-name { display: none; }
+
+html.desktop .doc-name {
+    display: inline-block;
+    font-family: 'Courier Prime', monospace;
+    font-size: 0.78rem;
+    color: var(--dim);
+    padding-left: 16px;
+    border-left: 1px solid var(--border);
+    max-width: 40ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* The layers panel is FULL only. Gated in CSS as well as in core/tier.js: the
+   class is on <html> before paint, so the panel never appears and then
+   disappears. tier.js is what stops layers.js building rows nobody can see. */
+.layers-section { display: none; }
+html.desktop .layers-section { display: block; }
+
+
+/* ── THE MENU BAR ──
+   Ported from sprite-forge/app/ui/style.css with its reasoning intact. It
+   moves to the kit once both apps run the same dispatcher (magma-kit 0.2.0).
+
+   Press Start 2P is the app's voice, but it is a display face — every glyph
+   takes the same wide cell, so "Save As" alone runs past 90px and a File menu
+   built from it reads as a wall. Courier Prime is the other face the shell
+   already carries, and it is a text face. The bar keeps Press Start 2P for
+   its four titles, where the width is the point; the drops are Courier
+   Prime. */
+.menubar { display: none; }
+
+html.desktop .menubar {
+    display: flex;
+    align-items: stretch;
+    align-self: stretch;
+    margin-left: 4px;
+}
+
+html.desktop .menu { position: relative; display: flex; }
+
+html.desktop .menu-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px;
+    letter-spacing: 0.08em;
+    color: var(--dim);
+    background: none;
+    border: none;
+    padding: 0 12px;
+    cursor: pointer;
+    transition: color 0.1s, background 0.1s;
+}
+
+html.desktop .menu-title:hover { color: var(--text); background: var(--surface); }
+
+/* The open title takes the accent and the drop below it is topped with the
+   same colour, so the two read as one shape rather than a button and a box
+   that happen to be near each other. */
+html.desktop .menu.open .menu-title {
+    color: var(--bg);
+    background: var(--rose);
+}
+
+html.desktop .menu-drop {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 40;
+    min-width: 248px;
+    padding: 5px 0;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-top: 2px solid var(--rose);
+    /* A hard offset shadow rather than a blurred one. Everything else here is
+       pixels with no antialiasing in sight, and a soft glow under the one
+       floating panel looks borrowed from a different program. */
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.55);
+}
+
+html.desktop .menu.open .menu-drop { display: block; }
+
+html.desktop .menu-drop button {
+    position: relative;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 28px;
+    width: 100%;
+    font-family: 'Courier Prime', monospace;
+    font-size: 0.8rem;
+    /* Uppercase to match every other button in the app; the labels stay
+       readable in the markup. */
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text);
+    background: none;
+    border: none;
+    border-left: 2px solid transparent;
+    padding: 5px 14px 5px 24px;
+    text-align: left;
+    cursor: pointer;
+}
+
+html.desktop .menu-drop button:hover:not(:disabled) {
+    background: var(--rose);
+    border-left-color: var(--cyan);
+    color: var(--bg);
+}
+
+/* Greyed rather than hidden: an Undo that vanishes when the stack is empty
+   moves Redo up under the cursor, and the menu changes shape as you use it. */
+html.desktop .menu-drop button:disabled {
+    color: var(--dim);
+    cursor: default;
+}
+
+/* The shortcut hint. Dim, and it inherits the hover colour so it does not stay
+   grey on a rose row. */
+html.desktop .menu-drop button i {
+    font-style: normal;
+    font-size: 0.7rem;
+    letter-spacing: 0;
+    color: var(--dim);
+    text-transform: none;
+}
+
+html.desktop .menu-drop button:hover:not(:disabled) i { color: var(--bg); }
+
+/* The checkmark column is why the items are indented on the left: the tick
+   appears and disappears without the label moving. */
+html.desktop .menu-drop button.checked::before {
+    content: '\2713';
+    position: absolute;
+    left: 9px;
+    font-size: 0.8rem;
+}
+
+/* Inset, so the rule reads as a divider between groups rather than a line
+   cutting the whole panel in half. */
+html.desktop .menu-drop hr {
+    height: 0;
+    margin: 5px 12px;
+    border: 0;
+    border-top: 1px solid var(--border);
+}

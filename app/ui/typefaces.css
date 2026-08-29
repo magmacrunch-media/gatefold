@@ -1,0 +1,126 @@
+/* ═══════════════════════════════════════════════
+   GATE//FOLD — the font picker's typefaces, self-hosted
+
+   WHY THIS FILE EXISTS, AND WHY IT IS NOT shell/fonts.css.
+
+   The web tool loaded nine of its fifteen picker faces from
+   fonts.googleapis.com. Under the desktop CSP (font-src 'self') that request
+   is blocked — and it fails SILENTLY, which is the part that matters: every
+   one of them is font-display:swap, so the fallback has already painted by
+   the time the fetch dies. Nothing looks broken, nothing logs, and the
+   exported PNG is simply rendered in the wrong typeface. Self-hosting is the
+   fix, and it is not optional.
+
+   shell/fonts.css is the shell's two core faces and is ALREADY the one
+   deliberately forked shell file — a pure `../../fonts/` -> `../fonts/` path
+   swap of the website's copy, because url() resolves against the stylesheet
+   and var() cannot interpolate into url(). Loading nine app-specific picker
+   faces into it would turn a mechanical fork into a merge conflict the next
+   time the website's copy changes. These belong to the app, so they live in
+   the app's own directory, where url('../fonts/...') resolves the same way.
+
+   TTF, NOT WOFF2, AND FOUR OF THEM ARE VARIABLE. github.com/google/fonts is
+   the upstream and it ships TrueType only — there is no woff2 and, for
+   Pixelify Sans, Oswald, Playfair Display and Inter, no static instance
+   either. The size cost is real (4 MB for the whole directory, of which
+   DotGothic16 alone is 2 MB because it carries full CJK coverage, which an
+   album cover may well want) and it is paid once, into a bundle. Taking the
+   subset woff2 from fonts.gstatic.com instead would be smaller, but gstatic
+   serves no licence file, and the OFL requires one.
+
+   ONE WEIGHT, UPRIGHT, EACH. ui/render.js draws text as
+   `${fontSize}px "${font}"`, which is CSS font-weight normal and no style.
+   Declaring the variable files at `font-weight: 400` rather than at their
+   full axis range pins the wght axis to the one instance the canvas can ask
+   for, so no future stylesheet can make the browser synthesise a bold from a
+   face this app never draws in bold. The old CDN link requested 400+700 for
+   six families and italics for Playfair, none of which was ever reachable.
+
+   Every face here is SIL Open Font License 1.1, and clause 2 requires the
+   licence to travel with the files: each OFL.txt sits beside its font in
+   app/fonts/, which Tauri embeds whole, so the licence ships inside the
+   installed binary rather than only in the repo. See app/fonts/README.md.
+
+   The four system faces in the picker (Times New Roman, Georgia, Impact,
+   Arial) need nothing and are not listed here.
+
+   Self-hosting alone is still not the whole fix: a face that has not finished
+   loading draws as the fallback and the canvas does not redraw when it
+   arrives. ui/canvas.js waits on document.fonts.ready, and ui/export.js
+   awaits document.fonts.load() for every face in use before it composites.
+   ═══════════════════════════════════════════════ */
+
+@font-face {
+    font-family: 'VT323';
+    src: url('../fonts/VT323-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Silkscreen';
+    src: url('../fonts/Silkscreen-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'DotGothic16';
+    src: url('../fonts/DotGothic16-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Space Mono';
+    src: url('../fonts/SpaceMono-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Bebas Neue';
+    src: url('../fonts/BebasNeue-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* ── The four variable files. See the header: declared at a single weight so
+      the wght axis is pinned to the instance the canvas asks for. ── */
+
+@font-face {
+    font-family: 'Pixelify Sans';
+    src: url('../fonts/PixelifySans-Variable.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Oswald';
+    src: url('../fonts/Oswald-Variable.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Playfair Display';
+    src: url('../fonts/PlayfairDisplay-Variable.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Inter';
+    src: url('../fonts/Inter-Variable.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}

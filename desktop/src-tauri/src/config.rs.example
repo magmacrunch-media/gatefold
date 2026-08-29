@@ -1,0 +1,170 @@
+//! COPY-AND-EDIT, not a library. Rename to config.rs, `mod config;` in
+//! lib.rs, and replace the fields with this app's own.
+//!
+//! The struct is app-specific, which is why this is a template rather than
+//! part of magma-kit. The PATTERN is the point, and every piece of it was paid
+//! for:
+//!
+//!   Config    the typed file on disk, every field with a default
+//!   View      what crosses IPC — NEVER carries a secret, only whether one is
+//!             set. Asserted against the serialized string, not the struct, so
+//!             a field added later cannot quietly leak
+//!   Patch     a partial update; absent fields mean "leave alone", which is
+//!             what a settings form actually sends
+//!   clamp     applied on load AND save, so a hand-edited file cannot put the
+//!             app into a state its UI cannot represent
+//!   atomic    write temp + rename, 0600 on unix — a crash mid-write must not
+//!             leave a truncated config that fails to parse next launch
+//!   fallback  a corrupt file logs and yields defaults rather than refusing to
+//!             start. An app that will not launch because of its own config is
+//!             an app you cannot fix from inside
+//!   env       an override for development, checked before the file
+
+use std::path::{Path, PathBuf};
+
+use serde::{Deserialize, Serialize};
+
+const FILE: &str = "config.json";
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(default)]
+pub struct Config {
+    pub host: String,
+    pub poll_secs: u64,
+    /// Never crosses IPC. See View.
+    pub api_key: String,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Config {
+            host: "localhost".into(),
+            poll_secs: 60,
+            api_key: String::new(),
+        }
+    }
+}
+
+/// What the settings panel is allowed to see.
+#[derive(Serialize)]
+pub struct View {
+    pub host: String,
+    pub poll_secs: u64,
+    /// Whether a key is set — never the key.
+    pub api_key_set: bool,
+}
+
+/// A partial update. Absent fields are left alone.
+#[derive(Deserialize)]
+pub struct Patch {
+    pub host: Option<String>,
+    pub poll_secs: Option<u64>,
+    pub api_key: Option<String>,
+}
+
+impl Config {
+    pub fn view(&self) -> View {
+        View {
+            host: self.host.clone(),
+            poll_secs: self.poll_secs,
+            api_key_set: !self.api_key.is_empty(),
+        }
+    }
+
+    pub fn apply(&mut self, patch: Patch) {
+        if let Some(v) = patch.host {
+            self.host = v;
+        }
+        if let Some(v) = patch.poll_secs {
+            self.poll_secs = v;
+        }
+        if let Some(v) = patch.api_key {
+            self.api_key = v;
+        }
+        self.clamp();
+    }
+
+    /// Applied on load and on save. A hand-edited file cannot put the app into
+    /// a state its own UI could not have produced.
+    pub fn clamp(&mut self) {
+        self.poll_secs = self.poll_secs.clamp(5, 3600);
+        self.host = self.host.trim().to_string();
+    }
+}
+
+pub fn path(dir: &Path) -> PathBuf {
+    dir.join(FILE)
+}
+
+/// A corrupt file is logged and replaced by defaults in memory — never a
+/// refusal to start, and never an overwrite of the user's file until they
+/// actually save.
+pub fn load(dir: &Path) -> Config {
+    if let Ok(v) = std::env::var("GATEFOLD_HOST") {
+        let mut c = Config::default();
+        c.host = v;
+        c.clamp();
+        return c;
+    }
+    let mut config = match std::fs::read_to_string(path(dir)) {
+        Ok(text) => serde_json::from_str::<Config>(&text).unwrap_or_else(|e| {
+            magma_kit::log::rs_detail("config", "unreadable, using defaults", &e.to_string());
+            Config::default()
+        }),
+        Err(_) => Config::default(),
+    };
+    config.clamp();
+    config
+}
+
+/// Temp + rename: a crash mid-write must not leave a truncated file that fails
+/// to parse on the next launch.
+pub fn save(dir: &Path, config: &Config) -> Result<(), String> {
+    let target = path(dir);
+    let tmp = target.with_extension("json.tmp");
+    let text = serde_json::to_string_pretty(config).map_err(|e| e.to_string())?;
+    std::fs::create_dir_all(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+    std::fs::write(&tmp, text).map_err(|e| format!("{}: {e}", tmp.display()))?;
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let _ = std::fs::set_permissions(&tmp, std::fs::Permissions::from_mode(0o600));
+    }
+
+    std::fs::rename(&tmp, &target).map_err(|e| format!("{}: {e}", target.display()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The test that matters: assert on the SERIALIZED STRING, not the struct.
+    /// A secret added to Config later leaks the moment someone adds it to View
+    /// by habit; this catches that.
+    #[test]
+    fn the_view_never_carries_a_secret() {
+        let mut c = Config::default();
+        c.api_key = "SUPERSECRET".into();
+        let json = serde_json::to_string(&c.view()).unwrap();
+        assert!(!json.contains("SUPERSECRET"), "{json}");
+        assert!(json.contains("\"api_key_set\":true"), "{json}");
+    }
+
+    #[test]
+    fn clamp_bounds_a_hand_edited_file() {
+        let mut c = Config::default();
+        c.poll_secs = 0;
+        c.clamp();
+        assert_eq!(c.poll_secs, 5);
+    }
+
+    #[test]
+    fn a_patch_leaves_absent_fields_alone() {
+        let mut c = Config::default();
+        c.api_key = "keep".into();
+        c.apply(Patch { host: Some("pi".into()), poll_secs: None, api_key: None });
+        assert_eq!(c.host, "pi");
+        assert_eq!(c.api_key, "keep");
+    }
+}

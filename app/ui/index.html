@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en" data-app="Gatefold">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>GATE//FOLD</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <!-- fonts.css is the shell's two core faces, self-hosted. typefaces.css is
+         the picker's other nine, also self-hosted: under the desktop CSP
+         (font-src 'self') a Google Fonts request is blocked, and because every
+         one of them is font-display:swap the fallback has ALREADY painted - so
+         nothing looks broken, nothing logs, and the exported PNG is simply the
+         wrong typeface. See app/fonts/README.md. -->
+    <link rel="stylesheet" href="../shell/fonts.css">
+    <link rel="stylesheet" href="typefaces.css">
+    <link rel="stylesheet" href="../shell/app-shell.css">
+    <link rel="stylesheet" href="../shell/toast.css">
+    <link rel="stylesheet" href="../shell/dropdown.css">
+    <link rel="stylesheet" href="style.css">
+
+    <!-- The kit loads in <head>, not at the end of <body>. bridge-core.js sets
+         html.desktop, and the menu bar, the doc name and the hidden back link
+         are all gated on it; doing that after the body paints flashes the
+         website's chrome on every launch. boot.js is FIRST regardless - it
+         exists to report failures in everything after it. -->
+    <script src="../kit/boot.js"></script>
+    <script src="../kit/bridge-core.js"></script>
+    <script src="../kit/keys.js"></script>
+    <script src="../kit/history.js"></script>
+    <script src="../kit/prefs.js"></script>
+    <script src="../kit/modal.js"></script>
+    <script src="../kit/dom.js"></script>
+    <script src="../kit/artstore.js"></script>
+    <script src="../kit/menu.js"></script>
+    <script src="bridge.js"></script>
+</head>
+<body>
+    <!-- The web (LITE) build still runs on phones, where this workspace does
+         not fit. Hidden on the desktop, where the window is resizable and a
+         narrow window is a choice rather than a device. -->
+    <div class="mobile-notice">
+        This tool is best experienced on a desktop or laptop.<br>
+        Please visit on a wider screen for the full workspace.
+    </div>
+
+    <header>
+        <div class="header-left">
+            <h1 class="glitch" data-text="GATE//FOLD">GATE//FOLD</h1>
+
+            <!-- Desktop only. Drawn in the page rather than by Windows: a
+                 native menu bar is OS-drawn, so it cannot take the app's
+                 typeface. Every item names an action and menu.js dispatches
+                 it; items that mirror a button proxy it via data-toggles, so
+                 there is still one implementation of each toggle. -->
+            <nav class="menubar" id="menubar" aria-label="Main menu">
+                <div class="menu">
+                    <button class="menu-title" data-menu="file">FILE</button>
+                    <div class="menu-drop" role="menu">
+                        <button data-action="project:new" title="Start an empty cover">New<i>Ctrl+N</i></button>
+                        <button data-action="project:open" title="Open an .gatefold project">Open&hellip;<i>Ctrl+O</i></button>
+                        <hr>
+                        <button data-action="project:save" title="An .gatefold file holds every element, the canvas and the imported art. A PNG holds only pixels.">Save<i>Ctrl+S</i></button>
+                        <button data-action="project:save-as" title="Save the project under a new name">Save As&hellip;<i>Ctrl+Shift+S</i></button>
+                        <hr>
+                        <button data-action="file:import">Import Image&hellip;<i>Ctrl+I</i></button>
+                        <button data-action="file:export">Export PNG&hellip;<i>Ctrl+E</i></button>
+                        <hr>
+                        <button data-action="app:quit">Exit<i>Alt+F4</i></button>
+                    </div>
+                </div>
+                <div class="menu">
+                    <button class="menu-title" data-menu="edit">EDIT</button>
+                    <div class="menu-drop" role="menu">
+                        <button data-action="edit:undo">Undo<i>Ctrl+Z</i></button>
+                        <button data-action="edit:redo">Redo<i>Ctrl+Shift+Z</i></button>
+                        <hr>
+                        <button data-action="edit:copy">Copy<i>Ctrl+C</i></button>
+                        <button data-action="edit:paste">Paste<i>Ctrl+V</i></button>
+                        <button data-action="edit:delete">Delete<i>Del</i></button>
+                        <hr>
+                        <button data-action="edit:clear">Clear All</button>
+                    </div>
+                </div>
+                <div class="menu">
+                    <button class="menu-title" data-menu="view">VIEW</button>
+                    <div class="menu-drop" role="menu">
+                        <button data-action="view:layers" data-toggles="layersToggle">Layers<i>F7</i></button>
+                        <button data-action="view:reference" data-toggles="refToggle">Reference Panel</button>
+                    </div>
+                </div>
+                <div class="menu">
+                    <button class="menu-title" data-menu="help">HELP</button>
+                    <div class="menu-drop" role="menu">
+                        <button data-action="help:reference">Reference&hellip;<i>F1</i></button>
+                        <button data-action="help:credits">Credits&hellip;</button>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Desktop only, and empty until project-ui.js fills it: the open
+                 file's name and dirty marker. CSS hides it in the browser,
+                 where there is no file to name. -->
+            <span class="doc-name" id="doc-name"></span>
+        </div>
+        <div class="header-right">
+            <span class="sys-stat" id="canvasSizeStat">1024&times;1024</span>
+            <span class="sys-stat" id="elementCountStat">0 ELEMENTS</span>
+        </div>
+    </header>
+
+    <!-- Website chrome. `../utilities/` does not exist inside the bundle, so on
+         the desktop this is not redundant, it is a link that cannot resolve;
+         style.css hides it under html.desktop. -->
+    <nav class="tool-nav">
+        <a href="../utilities/" class="back-link chip"><span class="chrome" data-text="&#8592; UTILITIES">&#8592; creative utilities</span></a>
+    </nav>
+
+    <div class="workspace">
+        <!-- LEFT PANEL: tools -->
+        <aside class="panel tools-panel">
+            <div class="action-btns">
+                <button class="action-btn" id="undoBtn" title="Undo (Ctrl+Z)">UNDO</button>
+                <button class="action-btn" id="redoBtn" title="Redo (Ctrl+Shift+Z)">REDO</button>
+            </div>
+            <div class="action-btns">
+                <button class="action-btn danger" id="deleteBtn" title="Delete selected (Del)">DELETE</button>
+                <button class="action-btn" id="clearBtn">CLEAR ALL</button>
+            </div>
+
+            <div class="panel-divider"></div>
+
+            <div class="prop-group">
+                <div class="canvas-bg-row">
+                    <div class="canvas-bg-item">
+                        <label class="prop-label">CANVAS</label>
+                        <div class="custom-dropdown" id="canvasSizeDropdown">
+                            <div class="dropdown-selected">
+                                <span>1024</span>
+                                <span class="dropdown-arrow">&#9662;</span>
+                            </div>
+                            <div class="dropdown-options">
+                                <div class="dropdown-option" data-value="512">512</div>
+                                <div class="dropdown-option active" data-value="1024">1024</div>
+                                <div class="dropdown-option" data-value="2048">2048</div>
+                                <div class="dropdown-option" data-value="4096">4096</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="canvas-bg-item">
+                        <label class="prop-label">BG</label>
+                        <div class="color-row">
+                            <input type="color" id="bgColor" value="#ffffff" class="color-input">
+                            <input type="text" id="bgHex" class="color-hex-input" value="#ffffff" maxlength="7">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-divider"></div>
+
+            <div class="tool-grid">
+                <button class="tool-btn active" data-tool="select" title="Select / Move (V) - Esc or click outside to deselect">
+                    <span class="tool-icon">&#9658;</span>
+                    <span class="tool-name">SELECT</span>
+                </button>
+                <button class="tool-btn" data-tool="text" title="Text (T)">
+                    <span class="tool-icon">T</span>
+                    <span class="tool-name">TEXT</span>
+                </button>
+                <button class="tool-btn" id="imageBtn" title="Import Image (Ctrl+I) - or drop one on the canvas">
+                    <span class="tool-icon">&#9634;</span>
+                    <span class="tool-name">IMAGE</span>
+                </button>
+            </div>
+            <input type="file" id="imageFileInput" accept="image/*" hidden>
+
+            <div class="panel-divider"></div>
+
+            <button class="shapes-btn" id="shapesBtn" title="Choose a shape">
+                <span class="shapes-btn-label" id="shapesBtnLabel">RECT</span>
+                <span class="shapes-btn-arrow">&#9662;</span>
+            </button>
+
+            <div class="prop-group" id="waveProps" hidden>
+                <label class="prop-label">FREQUENCY</label>
+                <div class="range-row">
+                    <input type="range" id="wavelength" min="1" max="20" value="5" class="range-input">
+                    <span class="range-val" id="wavelengthVal">5</span>
+                </div>
+            </div>
+
+            <div class="prop-group" id="waveModeGroup" hidden>
+                <label class="prop-label">WAVE MODE</label>
+                <div class="action-btns">
+                    <button class="action-btn" id="waveFilledBtn">FILLED</button>
+                    <button class="action-btn" id="waveOpenBtn">OPEN</button>
+                </div>
+            </div>
+
+            <div class="panel-divider"></div>
+
+            <div class="panel-label">
+                REFERENCE
+                <button class="section-toggle active" id="refToggle" title="Show the reference panel">&#9662;</button>
+            </div>
+            <div class="ref-section" id="refSection">
+                <button class="ref-upload-btn" id="refUploadBtn">UPLOAD IMAGE</button>
+                <input type="file" id="refFileInput" accept="image/*" hidden>
+                <div class="ref-preview-wrap" id="refPreviewWrap">
+                    <canvas id="refCanvas" class="ref-canvas"></canvas>
+                    <button class="ref-clear-btn" id="refClearBtn" title="Remove reference">&times;</button>
+                </div>
+                <p class="ref-hint">click to sample color</p>
+            </div>
+        </aside>
+
+        <!-- SHAPES POPUP -->
+        <div class="shapes-popup" id="shapesPopup">
+            <div class="popup-section-label">BASIC</div>
+            <div class="shapes-popup-grid">
+                <button class="shape-btn" data-tool="rect" title="Rectangle (R)">
+                    <span class="tool-icon">&#9645;</span>
+                    <span class="tool-name">RECT</span>
+                </button>
+                <button class="shape-btn" data-tool="circle" title="Circle (C)">
+                    <span class="tool-icon">&#9675;</span>
+                    <span class="tool-name">CIRCLE</span>
+                </button>
+                <button class="shape-btn" data-tool="line" title="Line (L)">
+                    <span class="tool-icon">&#9585;</span>
+                    <span class="tool-name">LINE</span>
+                </button>
+                <button class="shape-btn" data-tool="triangle" title="Triangle">
+                    <span class="tool-icon">&#9653;</span>
+                    <span class="tool-name">TRI</span>
+                </button>
+                <button class="shape-btn" data-tool="pentagon" title="Pentagon">
+                    <span class="tool-icon">&#11043;</span>
+                    <span class="tool-name">PENTA</span>
+                </button>
+                <button class="shape-btn" data-tool="hexagon" title="Hexagon">
+                    <span class="tool-icon">&#11044;</span>
+                    <span class="tool-name">HEXA</span>
+                </button>
+                <button class="shape-btn" data-tool="diamond" title="Diamond">
+                    <span class="tool-icon">&#9671;</span>
+                    <span class="tool-name">DIAMOND</span>
+                </button>
+                <button class="shape-btn" data-tool="star" title="Star">
+                    <span class="tool-icon">&#9733;</span>
+                    <span class="tool-name">STAR</span>
+                </button>
+                <button class="shape-btn" data-tool="arrow" title="Arrow">
+                    <span class="tool-icon">&#10148;</span>
+                    <span class="tool-name">ARROW</span>
+                </button>
+                <button class="shape-btn" data-tool="roundrect" title="Rounded Rect">
+                    <span class="tool-icon">&#9711;</span>
+                    <span class="tool-name">R. RECT</span>
+                </button>
+            </div>
+            <div class="popup-section-label">WAVES</div>
+            <div class="shapes-popup-grid">
+                <button class="shape-btn" data-tool="sine" title="Sine Wave">
+                    <span class="tool-icon">&#8767;</span>
+                    <span class="tool-name">SINE</span>
+                </button>
+                <button class="shape-btn" data-tool="squarewave" title="Square Wave">
+                    <span class="tool-icon">&#8861;</span>
+                    <span class="tool-name">SQUARE</span>
+                </button>
+                <button class="shape-btn" data-tool="sawtooth" title="Sawtooth Wave">
+                    <span class="tool-icon">&#8894;</span>
+                    <span class="tool-name">SAWTOOTH</span>
+                </button>
+                <button class="shape-btn" data-tool="trianglewave" title="Triangle Wave">
+                    <span class="tool-icon">&#8895;</span>
+                    <span class="tool-name">TRI WAVE</span>
+                </button>
+                <button class="shape-btn" data-tool="step" title="Step Function">
+                    <span class="tool-icon">&#8726;</span>
+                    <span class="tool-name">STEP</span>
+                </button>
+                <button class="shape-btn" data-tool="pulse" title="Pulse Train">
+                    <span class="tool-icon">&#8863;</span>
+                    <span class="tool-name">PULSE</span>
+                </button>
+            </div>
+            <div class="popup-section-label">CLIP ART</div>
+            <div class="shapes-popup-grid" id="clipartGrid">
+                <!-- populated by ui/shapes-popup.js from core/clipart.js -->
+            </div>
+        </div>
+
+        <!-- CENTER: the canvas -->
+        <div class="center-area">
+            <!-- display:contents - see the note in style.css. Do NOT give this
+                 a box; it clipped the canvas by 17.5px top and bottom. -->
+            <div class="canvas-wrap" id="canvasWrap">
+                <canvas id="mainCanvas" width="1024" height="1024"></canvas>
+            </div>
+        </div>
+
+        <!-- RIGHT PANEL: layers + properties -->
+        <aside class="panel props-panel">
+            <!-- FULL only (core/tier.js). A layer list is the one place the
+                 z-order is visible; the FWD/BACK buttons below drive the same
+                 splice, so there is one implementation of the reorder. -->
+            <div class="layers-section" id="layersSection">
+                <div class="panel-label">
+                    LAYERS
+                    <button class="section-toggle active" id="layersToggle" title="Show the layer list (F7)">&#9662;</button>
+                </div>
+                <div class="layers-list" id="layersList">
+                    <!-- populated by ui/layers.js -->
+                </div>
+                <div class="panel-divider"></div>
+            </div>
+
+            <div class="panel-label">PROPERTIES</div>
+
+            <div class="prop-group">
+                <label class="prop-label">FILL</label>
+                <div class="color-row">
+                    <input type="color" id="fillColor" value="#ffffff" class="color-input">
+                    <input type="text" id="fillHex" class="color-hex-input" value="#ffffff" maxlength="7">
+                    <button class="no-fill-btn" id="noFillBtn" title="No fill">&#8210;</button>
+                </div>
+            </div>
+
+            <div class="prop-group">
+                <label class="prop-label">STROKE</label>
+                <div class="color-row">
+                    <input type="color" id="strokeColor" value="#000000" class="color-input">
+                    <input type="text" id="strokeHex" class="color-hex-input" value="#000000" maxlength="7">
+                    <button class="no-fill-btn" id="noStrokeBtn" title="No stroke">&#8210;</button>
+                </div>
+            </div>
+
+            <div class="prop-group">
+                <label class="prop-label">STROKE WIDTH</label>
+                <div class="range-row">
+                    <input type="range" id="strokeWidth" min="1" max="40" value="4" class="range-input">
+                    <span class="range-val" id="strokeWidthVal">4</span>
+                </div>
+            </div>
+
+            <div class="panel-divider"></div>
+
+            <div class="prop-group" id="rotationGroup" hidden>
+                <label class="prop-label">ROTATION</label>
+                <div class="range-row">
+                    <button class="rot-btn" id="rotMinus" title="Rotate -5 degrees">&#8722;</button>
+                    <input type="range" id="rotation" min="0" max="360" value="0" class="range-input">
+                    <button class="rot-btn" id="rotPlus" title="Rotate +5 degrees">+</button>
+                    <span class="range-val" id="rotationVal">0&deg;</span>
+                </div>
+            </div>
+
+            <div class="prop-group" id="stepCountGroup" hidden>
+                <label class="prop-label">STEPS</label>
+                <div class="range-row">
+                    <input type="range" id="stepCount" min="2" max="20" value="5" class="range-input">
+                    <span class="range-val" id="stepCountVal">5</span>
+                </div>
+            </div>
+
+            <div class="prop-group" id="dutyGroup" hidden>
+                <label class="prop-label">DUTY CYCLE</label>
+                <div class="range-row">
+                    <input type="range" id="dutyCycle" min="5" max="95" value="20" class="range-input">
+                    <span class="range-val" id="dutyCycleVal">20%</span>
+                </div>
+            </div>
+
+            <div class="prop-group" id="opacityGroup" hidden>
+                <label class="prop-label">OPACITY</label>
+                <div class="range-row">
+                    <input type="range" id="opacity" min="0" max="100" value="100" class="range-input">
+                    <span class="range-val" id="opacityVal">100%</span>
+                </div>
+            </div>
+
+            <div class="prop-group" id="imageScaleGroup" hidden>
+                <label class="prop-label">FIT TO CANVAS</label>
+                <div class="action-btns">
+                    <button class="action-btn" id="imageCoverBtn" title="Fill the whole canvas, cropping the overflow">&#9632; COVER</button>
+                    <button class="action-btn" id="imageContainBtn" title="Fit the whole image inside the canvas">&#9633; FIT</button>
+                </div>
+
+                <label class="prop-label">SCALE</label>
+                <div class="range-row">
+                    <input type="range" id="imageScale" min="10" max="500" value="100" class="range-input">
+                    <span class="range-val" id="imageScaleVal">100%</span>
+                </div>
+                <div class="prop-group" id="imageDimsGroup">
+                    <label class="prop-label">SIZE</label>
+                    <div class="range-row">
+                        <span class="range-val" id="imageDims">&mdash;</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="prop-group" id="zorderGroup" hidden>
+                <label class="prop-label">LAYER ORDER</label>
+                <div class="action-btns">
+                    <button class="action-btn" id="bringForwardBtn" title="Bring Forward">&#9650; FWD</button>
+                    <button class="action-btn" id="sendBackBtn" title="Send Backward">&#9660; BACK</button>
+                </div>
+            </div>
+
+            <div class="prop-group" id="textProps" hidden>
+                <label class="prop-label">FONT</label>
+                <div class="custom-dropdown" id="fontSelectDropdown">
+                    <div class="dropdown-selected">
+                        <span>Press Start 2P</span>
+                        <span class="dropdown-arrow">&#9662;</span>
+                    </div>
+                    <div class="dropdown-options">
+                        <div class="dropdown-option active" data-value="Press Start 2P">Press Start 2P</div>
+                        <div class="dropdown-option" data-value="VT323">VT323</div>
+                        <div class="dropdown-option" data-value="Silkscreen">Silkscreen</div>
+                        <div class="dropdown-option" data-value="DotGothic16">DotGothic16</div>
+                        <div class="dropdown-option" data-value="Pixelify Sans">Pixelify Sans</div>
+                        <div class="dropdown-option" data-value="Courier Prime">Courier Prime</div>
+                        <div class="dropdown-option" data-value="Space Mono">Space Mono</div>
+                        <div class="dropdown-option" data-value="Bebas Neue">Bebas Neue</div>
+                        <div class="dropdown-option" data-value="Oswald">Oswald</div>
+                        <div class="dropdown-option" data-value="Playfair Display">Playfair Display</div>
+                        <div class="dropdown-option" data-value="Inter">Inter</div>
+                        <div class="dropdown-option" data-value="Times New Roman">Times New Roman</div>
+                        <div class="dropdown-option" data-value="Georgia">Georgia</div>
+                        <div class="dropdown-option" data-value="Impact">Impact</div>
+                        <div class="dropdown-option" data-value="Arial">Arial</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="prop-group" id="fontSizeGroup" hidden>
+                <label class="prop-label">FONT SIZE</label>
+                <div class="range-row">
+                    <input type="range" id="fontSize" min="8" max="200" value="48" class="range-input">
+                    <span class="range-val" id="fontSizeVal">48</span>
+                </div>
+            </div>
+
+            <button class="export-btn" id="editTextBtn" hidden>EDIT TEXT</button>
+
+            <div class="panel-divider"></div>
+
+            <div class="prop-group">
+                <label class="prop-label">FILE NAME</label>
+                <input type="text" id="fileName" class="file-input" value="cover">
+            </div>
+            <button class="export-btn" id="exportBtn">EXPORT PNG</button>
+        </aside>
+    </div>
+
+    <!-- DIALOGS
+         Real <dialog> elements on MagmaKit.modal, not the old div overlay: the
+         kit gives the three ways out (the x, a named closer, the backdrop) one
+         implementation, and asker() settles its promise exactly once whichever
+         way is taken. They live outside .workspace so nothing that rewrites a
+         panel's innerHTML can remove them. -->
+    <dialog class="modal-box" id="textModal">
+        <div class="modal-header">ADD TEXT<button class="modal-close" title="Close">&times;</button></div>
+        <textarea id="modalTextInput" class="modal-textarea" placeholder="Type here..." rows="3"></textarea>
+        <div class="modal-row">
+            <label class="prop-label">FONT</label>
+            <div class="custom-dropdown" id="modalFontSelectDropdown">
+                <div class="dropdown-selected">
+                    <span>Press Start 2P</span>
+                    <span class="dropdown-arrow">&#9662;</span>
+                </div>
+                <div class="dropdown-options">
+                    <div class="dropdown-option active" data-value="Press Start 2P">Press Start 2P</div>
+                    <div class="dropdown-option" data-value="VT323">VT323</div>
+                    <div class="dropdown-option" data-value="Silkscreen">Silkscreen</div>
+                    <div class="dropdown-option" data-value="DotGothic16">DotGothic16</div>
+                    <div class="dropdown-option" data-value="Pixelify Sans">Pixelify Sans</div>
+                    <div class="dropdown-option" data-value="Courier Prime">Courier Prime</div>
+                    <div class="dropdown-option" data-value="Space Mono">Space Mono</div>
+                    <div class="dropdown-option" data-value="Bebas Neue">Bebas Neue</div>
+                    <div class="dropdown-option" data-value="Oswald">Oswald</div>
+                    <div class="dropdown-option" data-value="Playfair Display">Playfair Display</div>
+                    <div class="dropdown-option" data-value="Inter">Inter</div>
+                    <div class="dropdown-option" data-value="Times New Roman">Times New Roman</div>
+                    <div class="dropdown-option" data-value="Georgia">Georgia</div>
+                    <div class="dropdown-option" data-value="Impact">Impact</div>
+                    <div class="dropdown-option" data-value="Arial">Arial</div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-row">
+            <label class="prop-label">SIZE</label>
+            <input type="range" id="modalFontSize" min="8" max="200" value="48" class="range-input">
+            <span class="range-val" id="modalFontSizeVal">48</span>
+        </div>
+        <div class="modal-btns">
+            <button class="action-btn" id="modalCancel">CANCEL</button>
+            <button class="export-btn" id="modalAdd">ADD TEXT</button>
+        </div>
+    </dialog>
+
+    <dialog class="modal-box" id="confirm-dialog">
+        <div class="modal-header">GATE//FOLD<button class="modal-close" title="Close">&times;</button></div>
+        <p class="modal-message" id="confirm-message"></p>
+        <div class="modal-btns">
+            <button class="action-btn" id="confirm-cancel">CANCEL</button>
+            <button class="export-btn" id="confirm-ok">OK</button>
+        </div>
+    </dialog>
+
+    <!-- The version is written here and read back by the Credits modal; it is
+         the only copy in markup, and tests/version.test.mjs holds it to
+         Cargo.toml. The web build has no binary to ask, which is why it is in
+         the markup at all. -->
+    <footer>
+        <button class="footer-text" id="credits-link">GATE//FOLD <span id="app-version">v1.9.0</span> &mdash; <span>MAGMACRUNCH MEDIA</span></button>
+    </footer>
+
+    <script src="../shell/toast.js"></script>
+    <script src="../shell/dropdown.js"></script>
+    <script src="../core/tier.js"></script>
+    <script src="../core/palette.js"></script>
+    <script src="../core/element.js"></script>
+    <script src="../core/waves.js"></script>
+    <script src="../core/geometry.js"></script>
+    <script src="../core/clipart.js"></script>
+    <script src="../core/keybindings.js"></script>
+    <script src="../core/artstore.js"></script>
+    <script src="../core/gatefold.js"></script>
+    <script src="canvas.js"></script>
+    <script src="images.js"></script>
+    <script src="render.js"></script>
+    <script src="props.js"></script>
+    <script src="tools.js"></script>
+    <script src="reference.js"></script>
+    <script src="textmodal.js"></script>
+    <script src="png.js"></script>
+    <script src="export.js"></script>
+    <script src="import.js"></script>
+    <script src="layers.js"></script>
+    <script src="confirm.js"></script>
+    <script src="shapes-popup.js"></script>
+    <script src="project-ui.js"></script>
+    <script src="help-ui.js"></script>
+    <script src="menu.js"></script>
+    <script src="session.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>
