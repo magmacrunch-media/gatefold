@@ -139,6 +139,7 @@
         $('rotationGroup').hidden = !el;
         $('opacityGroup').hidden = !el;
         $('zorderGroup').hidden = !el;
+        $('lockGroup').hidden = !el;
         $('imageScaleGroup').hidden = !(el && el.type === 'image');
         $('waveProps').hidden = !(isWaveTool || isWaveEl);
         $('waveModeGroup').hidden = !isWaveEl;
@@ -215,6 +216,14 @@
             const op = el.opacity != null ? el.opacity : 100;
             $('opacity').value = op;
             $('opacityVal').textContent = op + '%';
+
+            /* The button says what pressing it will DO, not what the state
+               is: a locked element offers UNLOCK. Getting this backwards on
+               a control that is also the only way out of the state is how
+               someone ends up stuck with a photo they cannot move. */
+            const locked = el.locked === true;
+            $('lockBtn').innerHTML = locked ? '&#128275; UNLOCK' : '&#128274; LOCK';
+            $('lockBtn').classList.toggle('active', locked);
 
             if (el.type === 'image') {
                 /* origW/origH is what SCALE is a percentage OF. An image that
@@ -293,6 +302,9 @@
                 syncFrom(el);
             }));
         }
+
+        // ── lock ──
+        $('lockBtn').addEventListener('click', () => S().toggleLock());
 
         // ── z-order ──
         $('bringForwardBtn').addEventListener('click', () => {

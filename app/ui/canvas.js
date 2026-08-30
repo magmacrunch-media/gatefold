@@ -81,6 +81,20 @@
         };
     }
 
+    /**
+     * Document units per screen pixel.
+     *
+     * The same ratio toCanvas() uses, exposed because a tolerance that is
+     * meant to FEEL the same at every canvas size has to be stated in screen
+     * pixels and converted here. Four document units is half a handle on a
+     * 512 cover and a rounding error on a 4096 one.
+     */
+    function scale() {
+        if (!canvas) return 1;
+        const r = canvas.getBoundingClientRect();
+        return r.width ? canvas.width / r.width : 1;
+    }
+
     /** Ask for a repaint. Many calls in one frame produce one paint. */
     function schedule() {
         if (pending || !paint) return;
@@ -104,6 +118,7 @@
         setSize: setSize,
         size: size,
         toCanvas: toCanvas,
+        scale: scale,
         schedule: schedule,
         flush: flush,
     };

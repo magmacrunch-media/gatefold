@@ -1,6 +1,6 @@
 [package]
 name = "gatefold"
-version = "1.10.3"
+version = "1.10.4"
 description = "GATE//FOLD"
 authors = ["magmacrunch media"]
 license = "PolyForm-Noncommercial-1.0.0"

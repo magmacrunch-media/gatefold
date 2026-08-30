@@ -134,6 +134,14 @@ export default function (M) {
         eq(E.stylable(undefined), true, 'and so is nothing at all');
     });
 
+    /* Read the same way round as `visible`: only an explicit true locks, so an
+       element from anywhere — a file written before this existed, or one
+       hand-edited — is movable unless it says otherwise. */
+    test('a new element is not locked', () => {
+        eq(E.create('image', {}).locked, false, 'an import can be moved the moment it lands');
+        eq(E.defaultsFor('text').locked, false, 'and so can text');
+    });
+
     test('describe labels a text element by its first line', () => {
         eq(E.describe({ type: 'text', text: 'SIDE A\nSIDE B' }), 'SIDE A', 'first line only');
         eq(E.describe({ type: 'rect' }), '', 'a shape has nothing to say');

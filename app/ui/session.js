@@ -29,6 +29,10 @@
        row names it and undo cannot reach it. ui/textmodal.js owns setting
        and clearing it; paint() is the only reader. */
     let preview = null;
+    /* The alignment lines for the drag in progress. Same reasoning as the
+       preview: they belong to a gesture, not to the document, so they are
+       held here and never reach history, the stats or an export. */
+    let guides = [];
 
     const doc = () => App.gatefold.get();
 
@@ -148,6 +152,7 @@
         App.render.render(ctx, doc(), {
             selectedId: selectedId,
             preview: preview,
+            guides: guides,
             measure: App.canvas.measure,
             width: App.canvas.size(),
         });
@@ -156,6 +161,16 @@
     /** Show an element that is not in the document yet; null clears it. */
     function setPreview(el) {
         preview = el || null;
+        App.canvas.schedule();
+    }
+
+    /** Show alignment lines for the gesture in progress; empty clears them. */
+    function setGuides(lines) {
+        const next = lines || [];
+        // A drag calls this on every mousemove and is usually not aligned to
+        // anything, so the common case is clearing what is already clear.
+        if (!next.length && !guides.length) return;
+        guides = next;
         App.canvas.schedule();
     }
 
@@ -203,6 +218,39 @@
         render();
     }
 
+    /* ── locking ──
+       A locked element is skipped by hit testing, so it cannot be clicked
+       and therefore cannot be reached to unlock. unlockAll is the way back,
+       and it is why the lock has a chord of its own rather than living only
+       in the layers panel, which the LITE build does not have. */
+
+    function setLocked(id, locked) {
+        const el = id == null ? selectedElement() : doc().elements.find((e) => e.id === id);
+        if (!el || el.locked === locked) return;
+        pushUndo();
+        el.locked = locked;
+        render();
+        if (App.props) App.props.syncFrom(selectedElement());
+    }
+
+    function toggleLock() {
+        const el = selectedElement();
+        if (el) setLocked(el.id, el.locked !== true);
+    }
+
+    function unlockAll() {
+        const locked = doc().elements.filter((el) => el.locked === true);
+        if (!locked.length) {
+            if (window.Toast) Toast.show('NOTHING IS LOCKED');
+            return;
+        }
+        pushUndo();
+        for (const el of locked) el.locked = false;
+        render();
+        if (App.props) App.props.syncFrom(selectedElement());
+        if (window.Toast) Toast.show(`UNLOCKED ${locked.length} ELEMENT${locked.length === 1 ? '' : 'S'}`);
+    }
+
     /** Move the selected element one step through the z-order. The layers
         panel drives this too, so there is one implementation of the reorder. */
     function reorder(id, delta) {
@@ -219,7 +267,9 @@
 
     function nudge(dx, dy) {
         const el = selectedElement();
-        if (!el) return;
+        // Locked means fixed in place, and the arrow keys are a way to move
+        // something that does not go through hit testing at all.
+        if (!el || el.locked === true) return;
         el.x += dx;
         el.y += dy;
         App.canvas.schedule();
@@ -261,6 +311,8 @@
         'edit:redo': redo,
         'edit:copy': copy,
         'edit:delete': () => remove(),
+        'edit:lock': toggleLock,
+        'edit:unlock-all': unlockAll,
         'select:none': () => select(null),
         'nudge:up': (e) => nudge(0, -stepFor(e)),
         'nudge:down': (e) => nudge(0, stepFor(e)),
@@ -322,11 +374,15 @@
         paint: paint,
         render: render,
         setPreview: setPreview,
+        setGuides: setGuides,
 
         add: add,
         remove: remove,
         clearAll: clearAll,
         reorder: reorder,
+        setLocked: setLocked,
+        toggleLock: toggleLock,
+        unlockAll: unlockAll,
         nudge: nudge,
 
         copy: copy,

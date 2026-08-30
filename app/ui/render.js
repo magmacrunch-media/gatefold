@@ -25,6 +25,10 @@
     const App = (window.Gatefold = window.Gatefold || {});
 
     const CHROME = '#a0a0b0';
+    /* The rose accent, not the chrome grey: a guide is a statement about
+       the canvas rather than a part of the selection, and the two must not
+       be mistaken for each other while both are on screen. */
+    const GUIDE = '#ff3d6e';
     const CHROME_FONT = '14px "Courier Prime"';
 
     /* ── paint helpers ──────────────────────────────────── */
@@ -372,6 +376,26 @@
         ctx.restore();
     }
 
+    /* ── the guides ─────────────────────────────────────── */
+
+    /** Edge to edge, hairline, over everything. */
+    function drawGuides(ctx, guides, w, h) {
+        ctx.save();
+        ctx.strokeStyle = GUIDE;
+        /* Scaled to the canvas, not fixed at 1: at 4096 a one-unit line is a
+           quarter of a screen pixel and effectively invisible, which is the
+           size at which a guide is most wanted. */
+        ctx.lineWidth = Math.max(1, Math.round(w / 512));
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        for (const g of guides) {
+            if (g.axis === 'x') { ctx.moveTo(g.at, 0); ctx.lineTo(g.at, h); }
+            else { ctx.moveTo(0, g.at); ctx.lineTo(w, g.at); }
+        }
+        ctx.stroke();
+        ctx.restore();
+    }
+
     /* ── the frame ──────────────────────────────────────── */
 
     /**
@@ -379,6 +403,8 @@
      *
      * opts.selectedId  draw the chrome around this element; null or absent
      *                  means none, which is what an export passes.
+     * opts.guides      alignment lines to draw over everything: [{axis, at}].
+     *                  Present only during a drag, and never during an export.
      * opts.preview     one element drawn last and owned by nobody — the text
      *                  being typed in the ADD TEXT dialog, before it exists.
      *                  It is NOT in doc.elements on purpose: an element in
@@ -406,6 +432,10 @@
             const sel = doc.elements.find((el) => el.id === o.selectedId);
             if (sel && sel.visible !== false) drawSelection(ctx, sel, o.measure);
         }
+
+        // Over the chrome as well as the artwork: a guide that a selection box
+        // crosses is a guide you cannot read at the moment you need it.
+        if (o.guides && o.guides.length) drawGuides(ctx, o.guides, w, h);
         ctx.restore();
     }
 
@@ -413,6 +443,7 @@
         render: render,
         drawElement: drawElement,
         drawSelection: drawSelection,
+        drawGuides: drawGuides,
         applyRotation: applyRotation,
         DRAW: DRAW,
     };

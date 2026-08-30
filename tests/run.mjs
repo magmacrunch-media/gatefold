@@ -12,7 +12,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 // MUST match the <script> order in app/ui/index.html — asserted below.
 export const KIT_ORDER = ['boot.js', 'bridge-core.js', 'keys.js', 'history.js',
     'prefs.js', 'modal.js', 'dom.js', 'artstore.js', 'menu.js'];
-export const ORDER = ['tier.js', 'palette.js', 'element.js', 'waves.js', 'geometry.js', 'clipart.js', 'keybindings.js', 'artstore.js', 'gatefold.js'];
+export const ORDER = ['tier.js', 'palette.js', 'element.js', 'waves.js', 'geometry.js', 'guides.js', 'clipart.js', 'keybindings.js', 'artstore.js', 'gatefold.js'];
 
 export const harness = createHarness({
     appRoot: join(ROOT, 'app'),
@@ -81,7 +81,7 @@ test('no source file carries a stray control character', () => {
 });
 
 const suites = ['./tier.test.mjs', './palette.test.mjs', './element.test.mjs',
-    './waves.test.mjs', './geometry.test.mjs', './clipart.test.mjs',
+    './waves.test.mjs', './geometry.test.mjs', './guides.test.mjs', './clipart.test.mjs',
     './keybindings.test.mjs', './artstore.test.mjs', './gatefold.test.mjs',
     './project-ui.test.mjs', './icon.test.mjs', './wiring.test.mjs', './platform.test.mjs', './version.test.mjs', './kit-integrity.test.mjs'];
 for (const s of suites) {

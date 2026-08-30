@@ -48,6 +48,13 @@
         { key: 'v', ctrl: true, action: 'edit:paste' },
         { key: 'Delete', action: 'edit:delete' },
         { key: 'Backspace', action: 'edit:delete' },
+        /* Lock fixes the selected element in place; unlock-all is the way
+           back for anyone who locked something and then deselected it. A
+           locked element is skipped by hit testing, so without a route that
+           does not need a click it could not be reached again — and the
+           layers panel, which is the other route, is FULL only. */
+        { key: 'l', ctrl: true, action: 'edit:lock' },
+        { key: 'l', ctrl: true, shift: true, action: 'edit:unlock-all' },
 
         // ── selection ──
         /* Escape deselects. Clicking bare canvas deselects too, but hit
@@ -93,6 +100,8 @@
         'project:new', 'project:open', 'project:save', 'project:save-as',
         'file:import', 'file:export',
         'edit:undo', 'edit:redo', 'edit:copy', 'edit:paste', 'edit:delete',
+        // Ctrl+L is the browser's address bar.
+        'edit:lock', 'edit:unlock-all',
         'nudge:up', 'nudge:down', 'nudge:left', 'nudge:right',
         'view:layers', 'help:reference',
     ];

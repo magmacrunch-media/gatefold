@@ -79,6 +79,9 @@
                         <button data-action="edit:delete">Delete<i>Del</i></button>
                         <hr>
                         <button data-action="edit:clear">Clear All</button>
+                        <hr>
+                        <button data-action="edit:lock" title="Fix the selected element in place">Lock Selected<i>Ctrl+L</i></button>
+                        <button data-action="edit:unlock-all" title="Release everything that was locked">Unlock All<i>Ctrl+Shift+L</i></button>
                     </div>
                 </div>
                 <div class="menu">
@@ -401,6 +404,17 @@
                 </div>
             </div>
 
+            <!-- Both tiers. The layers panel has a per-row lock too, but it is
+                 FULL-only, so without this LITE could lock something and never
+                 unlock it. Locking leaves the element selected, so undoing the
+                 decision is one click away. -->
+            <div class="prop-group" id="lockGroup" hidden>
+                <label class="prop-label">POSITION</label>
+                <div class="action-btns">
+                    <button class="action-btn" id="lockBtn" title="Fix this element in place (Ctrl+L)">&#128274; LOCK</button>
+                </div>
+            </div>
+
             <div class="prop-group" id="zorderGroup" hidden>
                 <label class="prop-label">LAYER ORDER</label>
                 <div class="action-btns">
@@ -536,7 +550,7 @@
          Cargo.toml. The web build has no binary to ask, which is why it is in
          the markup at all. -->
     <footer>
-        <button class="footer-text" id="credits-link">GATE//FOLD <span id="app-version">v1.10.3</span> &mdash; <span>MAGMACRUNCH MEDIA</span></button>
+        <button class="footer-text" id="credits-link">GATE//FOLD <span id="app-version">v1.10.4</span> &mdash; <span>MAGMACRUNCH MEDIA</span></button>
     </footer>
 
     <script src="../shell/toast.js"></script>
@@ -546,6 +560,7 @@
     <script src="../core/element.js"></script>
     <script src="../core/waves.js"></script>
     <script src="../core/geometry.js"></script>
+    <script src="../core/guides.js"></script>
     <script src="../core/clipart.js"></script>
     <script src="../core/keybindings.js"></script>
     <script src="../core/artstore.js"></script>

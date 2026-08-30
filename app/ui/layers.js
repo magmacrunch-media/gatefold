@@ -50,6 +50,7 @@
         const r = d.el('div', 'layer-row');
         if (el.id === selectedId) r.classList.add('selected');
         if (el.visible === false) r.classList.add('hidden');
+        if (el.locked === true) r.classList.add('locked');
 
         r.appendChild(d.el('span', 'layer-kind', kindOf(el)));
         r.appendChild(d.el('span', 'layer-name', labelFor(el)));
@@ -64,6 +65,18 @@
             App.session.render();
         });
         r.appendChild(eye);
+
+        /* The other way out of a lock, and the discoverable one. A locked
+           element is skipped by hit testing, so this row is the only place it
+           can still be pointed at with a mouse. */
+        const lock = d.el('button', 'layer-lock', el.locked === true ? '🔒' : '🔓');
+        lock.type = 'button';
+        lock.title = el.locked === true ? 'Unlock' : 'Lock in place';
+        lock.addEventListener('click', function (e) {
+            e.stopPropagation();   // locking is not selecting
+            App.session.setLocked(el.id, el.locked !== true);
+        });
+        r.appendChild(lock);
 
         r.addEventListener('click', function () { App.session.select(el.id); });
         return r;

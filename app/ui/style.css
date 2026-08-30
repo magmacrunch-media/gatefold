@@ -828,6 +828,32 @@ body.dragging #mainCanvas { cursor: grabbing; }
 
 .layer-vis:hover { color: var(--rose); }
 
+/* Same control, same size, same hover as the eye — they sit side by side and
+   reading as one pair is the point. */
+.layer-lock {
+    flex: 0 0 auto;
+    background: none;
+    border: none;
+    color: var(--dim);
+    font-size: 10px;
+    line-height: 1;
+    padding: 0 2px;
+    cursor: pointer;
+}
+
+.layer-lock:hover { color: var(--rose); }
+
+/* A locked row is not dimmed the way a hidden one is: it is still on the
+   cover and still being looked at, it just cannot be grabbed. The marker is
+   the cursor over its name, which says "not for clicking". */
+.layer-row.locked .layer-name { cursor: default; }
+
+/* The lock button in the property panel, when what it offers is UNLOCK. */
+#lockBtn.active {
+    border-color: var(--rose);
+    color: var(--rose);
+}
+
 .layers-list .no-data {
     padding: 8px 6px;
     font-size: 9px;

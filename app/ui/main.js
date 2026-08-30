@@ -35,6 +35,7 @@
         style: () => App.props.currentStyle(),
         onSelect: (id) => App.session.select(id),
         onChange: () => App.canvas.schedule(),
+        onGuides: (lines) => App.session.setGuides(lines),
         onCursor: (cursor) => { canvas.style.cursor = cursor || ''; },
         onToolChange: () => App.props.updateVisibility(),
         onStrokeStart: () => App.session.beginStroke(),

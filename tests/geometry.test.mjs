@@ -166,6 +166,27 @@ export default function (M) {
         eq(G.hitTest(50, 50, [under, hidden], measure).id, 2, 'the visible one below is found');
     });
 
+    /* THE POINT OF LOCKING. A photo fitted with COVER has the whole canvas
+       for a bounding box, so every click that missed the text on top of it
+       selected the photo and every stray drag moved it. Locked, it stops
+       answering and the click carries on to whatever is above it. */
+    test('a locked element is not clickable, and the click reaches what is above', () => {
+        const photo = { id: 1, type: 'image', x: 0, y: 0, w: 1024, h: 1024, locked: true };
+        const title = { id: 2, type: 'rect', x: 40, y: 40, w: 100, h: 30 };
+        eq(G.hitTest(500, 500, [photo], measure), null,
+            'bare canvas over a locked photo is bare canvas — which is a deselect');
+        eq(G.hitTest(50, 50, [photo, title], measure).id, 2, 'the text on top is still reachable');
+    });
+
+    test('locked and hidden are read the same way round', () => {
+        const el = { id: 1, type: 'rect', x: 0, y: 0, w: 100, h: 100 };
+        ok(G.hitTest(50, 50, [{ ...el, locked: false }], measure), 'false is not locked');
+        ok(G.hitTest(50, 50, [{ ...el }], measure), 'absent is not locked either');
+        eq(G.hitTest(50, 50, [{ ...el, locked: true }], measure), null,
+            'only an explicit true locks, so a file written before this existed'
+            + ' opens with everything movable');
+    });
+
     test('an element with no visible field is visible', () => {
         ok(G.hitTest(5, 5, [{ type: 'rect', x: 0, y: 0, w: 10, h: 10 }], measure),
             'absent means visible, so a hand-written file still works');

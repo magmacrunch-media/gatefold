@@ -51,7 +51,10 @@ export default function (M) {
        the whole reason PREVENT exists. */
     test('the browser-stealing chords are all prevented', () => {
         for (const a of ['project:save', 'project:save-as', 'project:open', 'project:new',
-            'file:import', 'file:export']) {
+            'file:import', 'file:export',
+            // Ctrl+L is the address bar, and Ctrl+Shift+L is a password
+            // manager in more than one browser.
+            'edit:lock', 'edit:unlock-all']) {
             ok(K.PREVENT.includes(a), `${a} is prevented`);
         }
     });

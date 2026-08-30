@@ -19,6 +19,7 @@
         'TOOLS   V select · R rect · C circle · L line · T text',
         'EDIT    Ctrl+Z undo · Ctrl+Shift+Z redo · Del delete',
         '        Ctrl+C copy · Ctrl+V paste',
+        '        Ctrl+L lock in place · Ctrl+Shift+L unlock all',
         'MOVE    arrows nudge 1px · Shift+arrows 10px',
         'FILE    Ctrl+N new · Ctrl+O open · Ctrl+S save',
         '        Ctrl+Shift+S save as · Ctrl+I import · Ctrl+E export',
@@ -28,6 +29,8 @@
         'Drop an image on the canvas, or paste one.',
         'Click the reference image to sample a colour.',
         'Escape deselects — useful once art covers the canvas.',
+        'Lock a fitted photo so clicks reach the text on top of it.',
+        'Drag toward the middle and an element snaps to centre.',
     ].join('\n');
 
     function version() {

@@ -31,12 +31,19 @@
        hide something without deleting it. There is no migration for it
        because the file format is new; ui/render.js and geometry.hitTest both
        test `visible !== false` so an element from anywhere, including one
-       hand-written into a file, is visible unless it says it is not. */
+       hand-written into a file, is visible unless it says it is not.
+
+       `locked` is read the same way round and for the same reason: only an
+       explicit true locks, so anything from anywhere is movable unless it
+       says otherwise. It exists because a photo fitted with COVER has the
+       whole canvas for a bounding box, and every click that misses the text
+       on top of it grabbed the photo instead. A locked element is skipped by
+       hit testing entirely, so the click reaches whatever is above it. */
     const COMMON = {
         id: 0, type: 'rect', x: 0, y: 0, w: 0, h: 0,
         fill: '#ffffff', stroke: '#000000', strokeWidth: 4,
         rotation: 0, opacity: 100,
-        visible: true, name: '',
+        visible: true, locked: false, name: '',
     };
 
     const WAVE = { wavelength: 5, waveMode: 'filled', steps: 5, duty: 0.2 };

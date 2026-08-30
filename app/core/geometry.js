@@ -186,9 +186,11 @@
      * Top-down, because the array is bottom-first z-order and the thing you
      * see is the thing you meant to click.
      *
-     * Invisible elements are skipped. A hidden element that still answered a
-     * hit test would be selectable through whatever is drawn over it, which
-     * reads as the app selecting the wrong thing.
+     * Invisible AND LOCKED elements are skipped. A hidden element that still
+     * answered a hit test would be selectable through whatever is drawn over
+     * it, which reads as the app selecting the wrong thing; a locked one that
+     * answered would still be in the way of everything above it, which is the
+     * whole reason to lock it.
      *
      * Known limitation, deliberately left: a line hit-tests as its bounding
      * box, so a long diagonal has a large region that selects it without the
@@ -199,7 +201,11 @@
     function hitTest(x, y, elements, measure, pad) {
         for (let i = (elements || []).length - 1; i >= 0; i--) {
             const el = elements[i];
-            if (!el || el.visible === false) continue;
+            /* Hidden or locked: both are "do not answer". Locked is what
+               makes a fitted photo stop swallowing every click aimed at the
+               text sitting on it — the click carries on to what is above,
+               or to nothing, which is a deselect. */
+            if (!el || el.visible === false || el.locked === true) continue;
             const b = bounds(el, measure);
             const p = toLocal(x, y, el, b);
             if (inPaddedBox(p.x, p.y, b, pad)) return el;

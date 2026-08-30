@@ -34,6 +34,17 @@
 
     const DRAG_THRESHOLD = 4;
 
+    /* HOW CLOSE COUNTS AS CENTRED, in SCREEN pixels rather than document
+       ones. The backing store runs 512 to 4096 against an element about
+       740px wide, so a fixed number of document units would be four times
+       stickier on a 4096 cover than on a 1024 one — the same gesture
+       snapping in one canvas size and not in another.
+
+       Four is about half a corner handle: it catches the centre when that
+       is what you are aiming for, and something deliberately placed five
+       pixels off centre stays five pixels off centre. */
+    const SNAP_SCREEN_PX = 4;
+
     function init(callbacks) { cb = callbacks || {}; }
 
     function setTool(next) {
@@ -70,7 +81,12 @@
             // A handle on the ALREADY-selected element wins over whatever is
             // under the cursor: the handles sit outside the box, often over
             // something else.
-            if (sel) {
+            //
+            // NOT IF IT IS LOCKED. hitTest already refuses to select one, but
+            // an element can be locked while it is selected, and the handles
+            // answer to the selection rather than to a hit test. Without this
+            // the corners of a locked photo stay draggable.
+            if (sel && sel.locked !== true) {
                 const b = G().bounds(sel, measure());
                 const handle = G().hitTestHandle(p.x, p.y, sel, b);
                 if (handle && handle.id === 'rotate') {
@@ -143,6 +159,19 @@
             moved = true;
             dragging.el.x = dragging.origX + dx;
             dragging.el.y = dragging.origY + dy;
+
+            /* Snap AFTER the raw move, so the offset is measured from where
+               the element actually is rather than from where it started —
+               otherwise a drag that crosses the centre accumulates the
+               correction and drifts. */
+            const snap = App.guides.snapToCentre(
+                G().bounds(dragging.el, measure()),
+                App.gatefold.canvasSize(doc.size),
+                SNAP_SCREEN_PX * App.canvas.scale());
+            dragging.el.x += snap.dx;
+            dragging.el.y += snap.dy;
+            if (cb.onGuides) cb.onGuides(snap.lines);
+
             if (cb.onChange) cb.onChange();
             return;
         }
@@ -182,7 +211,7 @@
         // Not dragging: the cursor tells you what the handles would do.
         if (tool === 'select' && cb.onCursor) {
             const sel = selected(doc);
-            if (!sel) { cb.onCursor(''); return; }
+            if (!sel || sel.locked === true) { cb.onCursor(''); return; }
             const b = G().bounds(sel, measure());
             const handle = G().hitTestHandle(p.x, p.y, sel, b);
             cb.onCursor(handle ? handle.cursor : '');
@@ -215,6 +244,8 @@
         dragging = null;
         resizing = null;
         rotating = null;
+        // The lines belong to the gesture, and the gesture is over.
+        if (cb.onGuides) cb.onGuides([]);
 
         if (wasMoving && moved && cb.onStrokeEnd) cb.onStrokeEnd();
         moved = false;
