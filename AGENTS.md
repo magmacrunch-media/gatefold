@@ -17,6 +17,7 @@ app/          the entire shipped frontend; Tauri's frontendDist
   ui/         the DOM and IPC layer
   fonts/      self-hosted (CSP font-src 'self') — see app/fonts/README.md
 desktop/      the Tauri shell only
+scripts/      dev-time tooling, never shipped — see The icon
 tests/        dependency-free runner
   kit/        VENDORED from magma-kit — GENERATED, do not edit here
 ```
@@ -74,15 +75,67 @@ If a `core/` module needs a shim to be tested, that is the signal it belongs
 in `ui/`. `testkit/canvas-shim.mjs` arrives with the sync and is deliberately
 unused.
 
-## The two temporary copies
+## The icon
 
-`app/core/artstore.js` is a byte-copy of deck-forge's, and `app/ui/menu.js` is
-a copy of sprite-forge's. Both are deliberate and time-boxed: they move into
-**magma-kit 0.2.0** and become a six-line wrapper and an actions map. Until
-they do, **do not edit them here** — edit the original and re-copy, or the
-promotion has two parents. The same goes for the `inStroke` latch in
-`ui/session.js`, which is the third copy of a workaround for a kit wart that
-0.2.0 removes.
+**The icon is code.** `scripts/make-icon.mjs` holds a palette, a 32x32 grid of
+palette indices, a PNG encoder and an ICO writer — so changing the design is an
+edit, not a round trip through an image editor and a re-export at eight sizes.
+`node scripts/make-icon.mjs --print` draws the grid in the terminal.
+
+Designing AT 32x32 is the point: that is the taskbar size, so the small case is
+the one being drawn rather than the one being hoped for. Every larger size is a
+whole-number scale of it.
+
+**Three commands, and the third is not optional:**
+
+```bash
+node scripts/make-icon.mjs --size 1024 --out icon-source.png
+cd desktop && npx tauri icon ../icon-source.png && cd ..
+node scripts/make-icon.mjs --icons desktop/src-tauri/icons
+node scripts/make-icon.mjs --favicon app/ui/favicon.png
+```
+
+`tauri icon` produces all 52 platform variants, which is what we want, but it
+scales with a **smooth** filter — measured on this design, it turned five
+colours into **180** at 32x32. The third command overwrites every whole
+multiple of the grid with an exact nearest-neighbour render and rebuilds
+`icon.ico`. The odd Store tile sizes (30, 44, 71, 89...) are not multiples of
+32 and keep the CLI's output; nobody looks closely at those.
+
+The fourth writes the favicon from the SAME grid. sprite-forge's `favicon.svg`
+is the source of its desktop icon set; deck-forge broke that link and has no
+favicon at all. One grid, both outputs, so the tab and the taskbar cannot
+drift.
+
+`tests/icon.test.mjs` asserts every pixel of `32x32.png` is exactly a palette
+colour, which a resampled file cannot be — a blend of two palette colours is by
+construction a third thing. Skip the third command and `npm run check` fails
+with the command to fix it. deck-forge documents the same rule as prose and has
+no test, so skipping it there is silent.
+
+**Changing an icon does not rebuild the binary.** `tauri-build` emits
+`cargo:rerun-if-changed` for `tauri.conf.json` and `capabilities/` only, so a
+build after swapping icons succeeds while leaving the old icon compiled into
+the Windows resource. `touch desktop/src-tauri/tauri.conf.json` first, and
+verify against the built exe rather than the source files. See
+`SHORTCUT_GUIDE.md`.
+
+## What is still a copy
+
+`app/core/artstore.js` and `app/ui/menu.js` are **done** — both moved into
+magma-kit 0.2.0 and what is left here is a one-line wrapper and an actions map.
+The `inStroke` latch in `ui/session.js` went with them, because 0.2.0's
+`beginStroke` is idempotent.
+
+What remains is `scripts/make-icon.mjs`, which is a copy of deck-forge's with a
+different design and palette. By the kit's own rule — a module gets in when a
+SECOND app has hand-rolled it — it now qualifies. It has not moved because
+magma-kit vendors `js/` and `testkit/` only: a build script would be a new
+category of shared file needing a new sync path, which is more design than two
+copies strictly earns. Recorded as a candidate in `magma-kit/README.md`. Until
+it moves, edit the design here freely — the two apps' designs are supposed to
+differ — but keep the encoders below the `DESIGNS` registry in step with
+deck-forge's.
 
 ## The bugs that were fixed in the port
 
