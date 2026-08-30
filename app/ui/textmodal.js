@@ -19,11 +19,27 @@
 
     let asker = null;
 
+    /** Show the chosen face in the textarea, so you type in what you get. */
+    function previewFont(font) {
+        const input = $('modalTextInput');
+        if (input) input.style.fontFamily = `"${font}", sans-serif`;
+    }
+
     function ensure() {
         if (asker) return asker;
         const dlg = $('textModal');
         if (!dlg || !window.MagmaKit || !window.MagmaKit.modal) return null;
         asker = window.MagmaKit.modal.asker(dlg, { closers: ['modalCancel'] });
+
+        /* RetroDropdown.setup is what BINDS a dropdown — without it the list
+           has no click handlers, so it never opens and its .active class never
+           moves. getValue() reads that class, so an unwired picker silently
+           returns whatever setValue last wrote and the choice is unmakeable.
+           This one was missed in the port and the font could not be chosen at
+           all; tests/wiring.test.mjs now checks every dropdown in the markup
+           against the setup calls. Once, here, because setup also attaches a
+           document-level click listener. */
+        RetroDropdown.setup('modalFontSelectDropdown', previewFont);
         return asker;
     }
 
@@ -48,7 +64,12 @@
             input.value = seed.text || '';
             sizeInput.value = seed.fontSize || 48;
             sizeOut.textContent = sizeInput.value;
-            RetroDropdown.setValue('modalFontSelectDropdown', seed.font || 'Press Start 2P');
+            // setValue moves the .active class but fires no handler, so the
+            // preview has to be seeded alongside it or the textarea shows the
+            // last-chosen face rather than this element's.
+            const font = seed.font || 'Press Start 2P';
+            RetroDropdown.setValue('modalFontSelectDropdown', font);
+            previewFont(font);
 
             const commit = function () {
                 const text = input.value;
