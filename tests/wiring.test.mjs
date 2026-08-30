@@ -29,7 +29,7 @@ const sources = readdirSync(UI)
    what the rest of the suite is for — only that SOMETHING claims each control,
    which is the failure that hides. */
 
-export default function () {
+export default function (M) {
     test('every dropdown in the markup is wired to RetroDropdown.setup', () => {
         const ids = [...html.matchAll(/class="custom-dropdown"\s+id="([^"]+)"/g)]
             .map((m) => m[1]);
@@ -126,6 +126,60 @@ export default function () {
             'ui/props.js consults element.stylable — without it an image import'
             + ' leaves the NO-FILL and NO-STROKE toggles stuck on and every later'
             + ' element is created invisible');
+    });
+
+    /* The REFERENCE card names chords, and a card that names one the app
+       does not answer to is worse than no card. It used to be a string in
+       ui/help-ui.js, free to drift from core/keybindings.js with nothing to
+       notice; now it is markup, and this is what holds the two together.
+
+       Chords are one <kbd> each rather than one per key, which is also what
+       lets ui/platform.js rewrite Ctrl+Shift+S as a single Mac glyph run. */
+    test('every chord the reference card names is a real binding', () => {
+        const chords = [...html.matchAll(/<kbd>(Ctrl\+[^<]+)<\/kbd>/g)].map((m) => m[1]);
+        ok(chords.length > 5, `found ${chords.length} chords on the card`);
+
+        const bound = new Set(M.keybindings.BINDINGS
+            .filter((b) => b.ctrl)
+            .map((b) => `Ctrl+${b.shift ? 'Shift+' : ''}${b.key.toUpperCase()}`));
+
+        for (const c of chords) {
+            ok(bound.has(c),
+                `${c} is on the reference card and in core/keybindings.js`
+                + ` — bound: ${[...bound].sort().join(', ')}`);
+        }
+    });
+
+    /* Lucide is ISC and every typeface is OFL. Both licences require the
+       attribution to travel with what they cover, and for someone holding
+       the installed app rather than the repo, the credits dialog IS where it
+       travels to. */
+    test('the credits name the licences that have to travel', () => {
+        const dlg = html.slice(html.indexOf('id="creditsModal"'));
+        const body = dlg.slice(0, dlg.indexOf('</dialog>'));
+        for (const [what, pattern] of [
+            ['the clip art source', /Lucide/],
+            ['its licence', /ISC/],
+            ['the font licence', /SIL Open Font License/],
+            ['the app licence', /PolyForm/],
+        ]) {
+            ok(pattern.test(body), `the credits name ${what}`);
+        }
+    });
+
+    /* The version has ONE home, the footer, and AGENTS.md counts the places
+       it lives. The credits read it back out of the DOM rather than being a
+       sixth copy to forget. */
+    test('the credits dialog has no version of its own', () => {
+        const dlg = html.slice(html.indexOf('id="creditsModal"'));
+        const lede = dlg.slice(dlg.indexOf('credits-lede'), dlg.indexOf('</p>'));
+        ok(/creditsVersion/.test(lede), 'there is a slot for it');
+        /* The lede only. The body further down cites PolyForm 1.0.0 and the SIL
+           Open Font License 1.1, which are licence versions and have every
+           business being written out. */
+        ok(!/v?[0-9]+[.][0-9]+[.][0-9]+/.test(lede),
+            'and no literal app version beside the name — the footer is the one'
+            + ' copy, and AGENTS.md counts them');
     });
 
 }

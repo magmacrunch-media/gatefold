@@ -1,69 +1,72 @@
 // ui/help-ui.js — Reference and Credits.
 //
-// Both are the confirm dialog wearing a different message, which is why there
-// is no third <dialog> in the markup: MagmaKit.modal.asker already gives one
-// dialog three ways out, and a reference card that only needs "OK" does not
-// need its own.
+// Both used to be a block of text handed to the confirm dialog: one monospace
+// paragraph in which the chords, the prose and the licence notices all had the
+// same weight, so the card said everything and showed nothing. They are real
+// dialogs now, shaped on sprite-forge's, which solved this first — a heading,
+// sub-labels, and a definition list for the chords.
 //
-// The credits are not decoration. Lucide is ISC and every typeface is OFL,
-// and both licences require attribution to travel with what they cover — this
-// is where it travels to for someone who has the installed app and not the
-// repo.
+// The content is in the MARKUP rather than built here, for the same reason
+// ui/platform.js gives for the menu: that is where a reader looks for it, and
+// it is what platform.applyLabels() rewrites at boot so a Mac reads Cmd. A
+// card assembled in JavaScript would need its own relabelling pass.
+//
+// The credits are not decoration. Lucide is ISC and every typeface is OFL, and
+// both licences require attribution to travel with what they cover — this is
+// where it travels to for someone who has the installed app and not the repo.
+//
+// The version is not written here either. index.html carries it once, in the
+// footer, and this reads it back out; AGENTS.md counts the five places a
+// version lives and this file is deliberately not a sixth.
 
 (function () {
     'use strict';
 
     const App = (window.Gatefold = window.Gatefold || {});
 
-    const REFERENCE = [
-        'TOOLS   V select · R rect · C circle · L line · T text',
-        'EDIT    Ctrl+Z undo · Ctrl+Shift+Z redo · Del delete',
-        '        Ctrl+C copy · Ctrl+V paste',
-        '        Ctrl+L lock in place · Ctrl+Shift+L unlock all',
-        'MOVE    arrows nudge 1px · Shift+arrows 10px',
-        'FILE    Ctrl+N new · Ctrl+O open · Ctrl+S save',
-        '        Ctrl+Shift+S save as · Ctrl+I import · Ctrl+E export',
-        'VIEW    F7 layers · F1 this card',
-        '',
-        'Drag the handle above a selection to rotate it.',
-        'Drop an image on the canvas, or paste one.',
-        'Click the reference image to sample a colour.',
-        'Escape deselects — useful once art covers the canvas.',
-        'Lock a fitted photo so clicks reach the text on top of it.',
-        'Drag toward the middle and an element snaps to centre.',
-    ].join('\n');
+    const $ = (id) => document.getElementById(id);
 
-    function version() {
-        const slot = document.getElementById('app-version');
-        return slot ? slot.textContent : '';
+    let wired = null;
+
+    function ensure() {
+        if (wired) return wired;
+        const ref = $('referenceModal');
+        const cre = $('creditsModal');
+        if (!ref || !cre || !window.MagmaKit || !window.MagmaKit.modal) return null;
+
+        // The three ways out — the x, the CLOSE button and the backdrop — are
+        // the kit's, the same as every other dialog in the app.
+        wired = {
+            reference: window.MagmaKit.modal.wire(ref, { closers: ['referenceClose'] }),
+            credits: window.MagmaKit.modal.wire(cre, { closers: ['creditsClose'] }),
+        };
+        return wired;
+    }
+
+    /* Both are reachable from the same menu and showModal() on an already-open
+       dialog throws, so opening one closes the other. */
+    function open(which) {
+        const w = ensure();
+        if (!w) return;
+        const other = which === 'credits' ? 'reference' : 'credits';
+        w[other].close();
+        w[which].open();
     }
 
     function credits() {
-        return App.confirm.ask([
-            `GATE//FOLD ${version()}`,
-            'magmacrunch media',
-            '',
-            'Clip art from Lucide (ISC).',
-            'Typefaces under the SIL Open Font License 1.1:',
-            'Press Start 2P, Courier Prime, VT323, Silkscreen,',
-            'DotGothic16, Pixelify Sans, Space Mono, Bebas Neue,',
-            'Oswald, Playfair Display, Inter.',
-            '',
-            'Built on magma-kit.',
-        ].join('\n'));
+        const slot = $('creditsVersion');
+        const version = $('app-version');
+        if (slot && version) slot.textContent = version.textContent;
+        open('credits');
     }
 
-    function reference() {
-        // Through the same relabeller as the menu, so the card and the menu
-        // cannot name the same chord two different ways.
-        return App.confirm.ask(App.platform.label(REFERENCE));
-    }
+    function reference() { open('reference'); }
 
     function init() {
         App.session.registerAction('help:reference', reference);
-        const link = document.getElementById('credits-link');
+        const link = $('credits-link');
         if (link) link.addEventListener('click', credits);
     }
 
-    App.helpUI = { init: init, reference: reference, credits: credits, REFERENCE: REFERENCE };
+    App.helpUI = { init: init, reference: reference, credits: credits };
 }());

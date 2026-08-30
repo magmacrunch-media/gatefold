@@ -358,6 +358,20 @@ dialog.modal-box:not([open]) {
     display: none;
 }
 
+/* PUTTING BACK WHAT THE RESET TOOK. A modal <dialog> is centred by the UA
+   with `margin: auto` against `inset: 0` — and ware/shell/app-shell.css
+   opens with `*, *::before, *::after { margin: 0 }`, which beats it. Every
+   dialog in this app was therefore pinned to the top-left corner of the
+   window, which is what "the text box is not in the middle" turned out to
+   mean; the header-and-footer asymmetry was a real 24px but not the cause.
+
+   ui/textmodal.js still refines its own placement to the CANVAS centre
+   rather than the viewport centre, and sets margin inline to do it. This is
+   the floor underneath that: the answer when no JavaScript is involved. */
+dialog.modal-box {
+    margin: auto;
+}
+
 .modal-box {
     background: var(--panel);
     border: 1px solid var(--border);
@@ -440,6 +454,98 @@ dialog.modal-box:not([open]) {
     width: 52px;
     flex: none;
 }
+
+/* ── THE DOCUMENTATION DIALOGS ──
+   REFERENCE and CREDITS. Wider than a question and scrollable, because they
+   are read rather than answered; capped against the viewport so a short
+   window scrolls the body instead of losing the CLOSE button off the bottom.
+   Shaped on sprite-forge’s. */
+.doc-modal {
+    width: min(600px, 92vw);
+    max-width: 92vw;
+    max-height: 86vh;
+    padding: 0;
+    gap: 0;
+}
+
+.doc-modal .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 20px 12px;
+}
+
+/* The body scrolls; the CLOSE row does NOT, which is why it is a sibling
+   of this rather than a child. On the reference card the content is longer
+   than any window, and a close button you have to scroll to find is a
+   close button that is not there. */
+.doc-modal .modal-body {
+    padding: 0 20px 4px;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+    /* Courier Prime, not Press Start 2P: this is prose, and a pixel face at
+       a readable size is exactly the wall of text being fixed. */
+    font-family: 'Courier Prime', monospace;
+    font-size: 12px;
+}
+
+.doc-modal .modal-body p {
+    margin: 0 0 12px;
+    line-height: 1.6;
+    color: var(--dim);
+}
+
+.doc-modal .modal-body strong { color: var(--text); font-weight: 400; }
+.doc-modal .modal-body code { color: var(--cyan); }
+
+.doc-modal .modal-btns {
+    flex: none;
+    margin: 0;
+    padding: 12px 20px 18px;
+    border-top: 1px solid var(--border);
+}
+
+/* The section headings. Press Start 2P and tiny, so they mark the page
+   without competing with what they introduce. */
+.sub-label {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 6px;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    margin: 16px 0 8px;
+}
+
+.ref-grid {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 7px 14px;
+    margin: 0 0 4px;
+    line-height: 1.5;
+}
+
+.ref-grid dt { white-space: nowrap; }
+.ref-grid dd { margin: 0; color: var(--dim); }
+.ref-grid kbd + kbd { margin-left: 3px; }
+
+kbd {
+    font-family: 'Courier Prime', monospace;
+    font-size: 11px;
+    background: var(--surface);
+    color: var(--cyan);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 2px 5px;
+    white-space: nowrap;
+}
+
+.credits-lede {
+    color: var(--text) !important;
+    line-height: 1.6;
+    margin-top: 4px;
+}
+
+.credits-lede strong { color: var(--cyan); }
 
 .modal-row {
     display: flex;

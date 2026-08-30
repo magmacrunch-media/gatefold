@@ -536,6 +536,106 @@
         </div>
     </dialog>
 
+    <!-- REFERENCE and CREDITS are real dialogs rather than a block of text in
+         the confirm box. Both were one monospace paragraph run through
+         App.platform.label(), which said everything and showed nothing: the
+         chords, the prose and the licence notices all had the same weight.
+
+         Shaped on sprite-forge's, which solved this first.
+
+         CHORDS ARE ONE <kbd> EACH, not one per key. ui/platform.js rewrites
+         Ctrl+Shift+S to the single Mac glyph run, and it can only do that to a
+         string that holds the whole chord. -->
+    <dialog class="modal-box doc-modal" id="referenceModal">
+        <div class="modal-header">REFERENCE<button class="modal-close" title="Close">&times;</button></div>
+        <div class="modal-body">
+            <div class="sub-label">tools</div>
+            <dl class="ref-grid">
+                <dt><kbd>V</kbd></dt><dd>Select and move</dd>
+                <dt><kbd>T</kbd></dt><dd>Text</dd>
+                <dt><kbd>R</kbd> <kbd>C</kbd> <kbd>L</kbd></dt><dd>Rectangle, circle, line</dd>
+            </dl>
+
+            <div class="sub-label">the selection</div>
+            <dl class="ref-grid">
+                <dt><kbd>&larr;&uarr;&darr;&rarr;</kbd></dt><dd>Nudge a pixel &mdash; hold <kbd>Shift</kbd> for ten</dd>
+                <dt><kbd>Esc</kbd></dt><dd>Deselect. The way out once art covers the canvas</dd>
+                <dt><kbd>Del</kbd></dt><dd>Delete the selected element</dd>
+                <dt><kbd>Ctrl+C</kbd> <kbd>Ctrl+V</kbd></dt><dd>Copy and paste it</dd>
+                <dt><kbd>Ctrl+L</kbd></dt><dd>Lock it in place</dd>
+                <dt><kbd>Ctrl+Shift+L</kbd></dt><dd>Unlock everything</dd>
+            </dl>
+
+            <div class="sub-label">project</div>
+            <dl class="ref-grid">
+                <dt><kbd>Ctrl+N</kbd> <kbd>Ctrl+O</kbd></dt><dd>New, and open a .gatefold project</dd>
+                <dt><kbd>Ctrl+S</kbd></dt><dd>Save &mdash; add <kbd>Shift</kbd> for Save As</dd>
+                <dt><kbd>Ctrl+I</kbd> <kbd>Ctrl+E</kbd></dt><dd>Import an image, export a PNG</dd>
+                <dt><kbd>Ctrl+Z</kbd></dt><dd>Undo &mdash; add <kbd>Shift</kbd> to redo</dd>
+                <dt><kbd>F7</kbd> <kbd>F1</kbd></dt><dd>Layers, and this card</dd>
+            </dl>
+
+            <div class="sub-label">things that are not keys</div>
+            <p>Drag the handle above a selection to rotate it. Drop an image on
+                the canvas, or paste one. Click the reference image to sample a
+                colour off it.</p>
+
+            <div class="sub-label">centring</div>
+            <p>Drag an element toward the middle and it snaps to the centre of
+                the cover, with a line showing which axis caught. Each axis is
+                separate, so a title can be centred across the cover while
+                staying high on it.</p>
+
+            <div class="sub-label">locking</div>
+            <p>A photo fitted with COVER fills the canvas, so every click that
+                misses the text on top of it lands on the photo. Lock it and
+                clicks pass straight through &mdash; from the panel, the layers
+                list, or <kbd>Ctrl+L</kbd>.</p>
+
+            <div class="sub-label">the two files</div>
+            <p>A <strong>.gatefold</strong> file is the whole cover: every
+                element, the canvas, and the imported art itself. A
+                <strong>PNG</strong> is only pixels. Exporting is not saving.</p>
+        </div>
+        <div class="modal-btns">
+            <button class="export-btn" id="referenceClose">CLOSE</button>
+        </div>
+    </dialog>
+
+    <dialog class="modal-box doc-modal" id="creditsModal">
+        <div class="modal-header">CREDITS<button class="modal-close" title="Close">&times;</button></div>
+        <div class="modal-body">
+            <p class="credits-lede">GATE//FOLD <span id="creditsVersion"></span><br>
+                A square album-cover editor by <strong>magmacrunch media</strong>.</p>
+
+            <div class="sub-label">licence</div>
+            <p>PolyForm Noncommercial 1.0.0. Copyright 2026 magmacrunch media,
+                magmacrunch.com. Free to use for anything that is not a
+                commercial purpose; the full text ships beside the app.</p>
+
+            <div class="sub-label">typefaces</div>
+            <p>Press Start 2P, Courier Prime, VT323, Silkscreen, DotGothic16,
+                Pixelify Sans, Space Mono, Bebas Neue, Oswald, Playfair Display
+                and Inter, all under the SIL Open Font License 1.1, whose text
+                ships beside the faces in <code>fonts/</code>. Self-hosted
+                rather than fetched, so a cover looks the same offline &mdash;
+                and so an export cannot come out in the fallback face.</p>
+
+            <div class="sub-label">clip art</div>
+            <p>The 27 icons are from <strong>Lucide</strong>, under the ISC
+                licence. They are drawn as canvas paths rather than embedded as
+                images, so they take the fill and stroke of the element.</p>
+
+            <div class="sub-label">built on</div>
+            <p><strong>magma-kit</strong> &mdash; the shared shell, undo stack,
+                dialogs and art store behind this app, sprite-forge, deck-press
+                and magma-ops. <strong>Tauri</strong> wraps the desktop build.</p>
+        </div>
+        <div class="modal-btns">
+            <button class="export-btn" id="creditsClose">CLOSE</button>
+        </div>
+    </dialog>
+
     <dialog class="modal-box" id="confirm-dialog">
         <div class="modal-header">GATE//FOLD<button class="modal-close" title="Close">&times;</button></div>
         <p class="modal-message" id="confirm-message"></p>
@@ -550,7 +650,7 @@
          Cargo.toml. The web build has no binary to ask, which is why it is in
          the markup at all. -->
     <footer>
-        <button class="footer-text" id="credits-link">GATE//FOLD <span id="app-version">v1.10.4</span> &mdash; <span>MAGMACRUNCH MEDIA</span></button>
+        <button class="footer-text" id="credits-link">GATE//FOLD <span id="app-version">v1.10.5</span> &mdash; <span>MAGMACRUNCH MEDIA</span></button>
     </footer>
 
     <script src="../shell/toast.js"></script>

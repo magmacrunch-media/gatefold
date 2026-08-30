@@ -71,6 +71,13 @@
             }
         }
 
+        /* The chords in the REFERENCE card. One <kbd> holds a whole chord
+           rather than one key each, which is what lets label() see the
+           Ctrl+Shift+ it has to consume as a unit. */
+        for (const key of document.querySelectorAll('kbd')) {
+            key.textContent = label(key.textContent);
+        }
+
         // Tooltips anywhere, which name the same chords in prose.
         for (const el of document.querySelectorAll('[title]')) {
             const t = el.getAttribute('title');
