@@ -145,6 +145,11 @@
 
     /* ── start ── */
 
+    /* Before menu.init(), so nothing has read a label yet. On Windows this
+       is a no-op; on a Mac it turns Ctrl+S into the glyphs a Mac user is
+       looking for, and Exit/Alt+F4 into Quit. */
+    App.platform.applyLabels();
+
     App.projectUI.init();
     App.helpUI.init();
     App.menu.init();

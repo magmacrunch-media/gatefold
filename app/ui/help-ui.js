@@ -51,7 +51,9 @@
     }
 
     function reference() {
-        return App.confirm.ask(REFERENCE);
+        // Through the same relabeller as the menu, so the card and the menu
+        // cannot name the same chord two different ways.
+        return App.confirm.ask(App.platform.label(REFERENCE));
     }
 
     function init() {

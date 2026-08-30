@@ -83,7 +83,7 @@ test('no source file carries a stray control character', () => {
 const suites = ['./tier.test.mjs', './palette.test.mjs', './element.test.mjs',
     './waves.test.mjs', './geometry.test.mjs', './clipart.test.mjs',
     './keybindings.test.mjs', './artstore.test.mjs', './gatefold.test.mjs',
-    './project-ui.test.mjs', './icon.test.mjs', './wiring.test.mjs', './version.test.mjs', './kit-integrity.test.mjs'];
+    './project-ui.test.mjs', './icon.test.mjs', './wiring.test.mjs', './platform.test.mjs', './version.test.mjs', './kit-integrity.test.mjs'];
 for (const s of suites) {
     await Promise.race([
         (async () => (await import(s)).default(M, harness))(),

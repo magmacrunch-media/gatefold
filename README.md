@@ -24,6 +24,32 @@ the web version at
 LITE is exactly what is live on magmacrunch.com and does not lose features to
 make the desktop build look better. See `core/tier.js`.
 
+## Installing it
+
+Grab the latest [release](https://github.com/magmacrunchmedia/gatefold/releases).
+Windows x64 and macOS (one universal build, Apple Silicon and Intel).
+
+**Neither build is code-signed**, so both operating systems will stop you the
+first time. That is about the absence of a paid certificate, not about anything
+found in the file — every release lists SHA-256 checksums if you want to
+confirm what you downloaded.
+
+- **Windows** — SmartScreen says *"Windows protected your PC"* and hides the
+  button. **More info → Run anyway.**
+- **macOS** — Gatekeeper is blunter, and on Apple Silicon it usually claims the
+  app *"is damaged and can't be opened"*, which is not true and is simply what
+  an unsigned quarantined bundle looks like. Drag it to Applications, then
+  either open **System Settings → Privacy & Security** and click **Open
+  Anyway**, or clear the quarantine flag directly:
+
+  ```bash
+  xattr -dr com.apple.quarantine /Applications/GATEFOLD.app
+  ```
+
+Releases are built by GitHub Actions on both platforms — see
+`.github/workflows/release.yml`, which has to check out magma-kit alongside
+this repo for the same reason you do.
+
 ## Running it
 
 ```bash
