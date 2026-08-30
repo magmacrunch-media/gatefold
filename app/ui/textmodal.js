@@ -73,9 +73,18 @@
 
             const commit = function () {
                 const text = input.value;
-                // An empty string is not text. Dismissing and confirming with
-                // nothing typed mean the same thing, so they answer the same.
-                if (!text.trim()) { settle(null); return; }
+                /* An empty ADD is NOT a dismissal, and conflating the two is
+                   what made a WebKit input bug look like vanishing text: the
+                   textarea took no keystrokes, ADD saw an empty string, and
+                   the dialog closed exactly as if CANCEL had been pressed.
+                   Say something and stay open — whatever the reason the box is
+                   empty, closing silently is the one response that teaches the
+                   user nothing. */
+                if (!text.trim()) {
+                    if (window.Toast) Toast.show('NOTHING TO ADD');
+                    input.focus();
+                    return;
+                }
                 settle({
                     text: text,
                     font: RetroDropdown.getValue('modalFontSelectDropdown', 'Press Start 2P'),
@@ -99,6 +108,16 @@
         });
     }
 
+    /* Both flows below are promise chains, so anything thrown downstream —
+       currentStyle, element.create, session.add — becomes an unhandled
+       rejection and produces the SAME symptom as the bug above: nothing
+       happens and nothing is said. */
+    function fail(err) {
+        const msg = err && err.message ? err.message : String(err);
+        if (window.Toast) Toast.show('COULD NOT ADD THAT TEXT');
+        if (App.fs && App.fs.logLine) App.fs.logLine('ERROR', 'text modal', msg);
+    }
+
     /** Place a new text element at (x, y). */
     function add(x, y) {
         ask('ADD TEXT', {}).then(function (answer) {
@@ -106,7 +125,7 @@
             App.session.add(App.element.create('text', Object.assign(
                 { x: x, y: y }, App.props.currentStyle(), answer
             )));
-        });
+        }).catch(fail);
     }
 
     /** Edit the text of an existing element. */
@@ -117,7 +136,7 @@
             Object.assign(el, answer);
             App.session.render();
             App.props.syncFrom(el);
-        });
+        }).catch(fail);
     }
 
     App.textmodal = { ask: ask, add: add, edit: edit };

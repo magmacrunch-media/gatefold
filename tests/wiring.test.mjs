@@ -7,6 +7,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const UI = join(ROOT, 'app', 'ui');
 
 const html = readFileSync(join(UI, 'index.html'), 'utf8');
+const css = readFileSync(join(UI, 'style.css'), 'utf8');
 const sources = readdirSync(UI)
     .filter((f) => f.endsWith('.js'))
     .map((f) => readFileSync(join(UI, f), 'utf8'))
@@ -65,6 +66,36 @@ export default function () {
             .map((m) => m[1]);
         const orphans = ids.filter((id) => !sources.includes(id));
         eq(orphans, [], 'form controls nothing reaches for');
+    });
+
+    /* ── the macOS text bug ──
+       body { user-select: none } is what a canvas app wants, and Chromium
+       exempts the inner editor of a form control from it. WEBKIT DOES NOT, so
+       on macOS that one rule reached into every input and textarea and made
+       them uneditable — the ADD TEXT dialog took no keystrokes at all, which
+       presented as text vanishing when placed.
+
+       The pair is what matters, so both halves are asserted. Windows never
+       showed a symptom, which is exactly why a silent regression here would
+       ship: every test on this machine would stay green. */
+    test('form controls are exempt from the body user-select rule', () => {
+        ok(/body\s*\{[^}]*user-select:\s*none/.test(css),
+            'body still suppresses selection — that is deliberate for a canvas app');
+
+        const carve = css.match(/(input|textarea)[^{]*\{[^}]*user-select:\s*text[^}]*\}/);
+        ok(carve, 'inputs and textareas are exempted, or macOS cannot type into them');
+        ok(/-webkit-user-select:\s*text/.test(carve[0]),
+            'the -webkit- prefix is present — it is the one WebKit actually reads');
+    });
+
+    test('the exemption names both kinds of text entry the markup uses', () => {
+        const found = css.match(/[^}]*user-select:\s*text[^}]*\}/);
+        ok(found, 'there is an exemption rule at all — see the test above');
+        const carve = found[0];
+        ok(/<input[^>]*type="text"/.test(html), 'there are text inputs to protect');
+        ok(/<textarea/.test(html), 'and a textarea — the ADD TEXT box');
+        ok(/input/.test(carve), 'the exemption names input');
+        ok(/textarea/.test(carve), 'the exemption names textarea');
     });
 
     /* The other direction: code reaching for an id the markup does not have.

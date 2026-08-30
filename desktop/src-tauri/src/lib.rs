@@ -19,7 +19,7 @@ struct LogReady(Mutex<Option<String>>);
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .manage(Dirty::new())
         .manage(LogReady(Mutex::new(None)))
@@ -40,7 +40,19 @@ pub fn run() {
                 "This project has unsaved changes. Close anyway?",
                 "GATE//FOLD",
             );
-        })
+        });
+
+    /* macOS ONLY, and the cfg is load-bearing rather than tidiness.
+       `Builder::menu` sets the menu for every window, and on Windows and Linux
+       that menu is painted INSIDE the window — directly above the app's own
+       menu bar, which is the same duplication moved somewhere worse. macOS is
+       the only platform with a global bar and the only one that needs this.
+       The attribute cannot go mid-chain because Builder::menu is itself
+       cfg(desktop), so the builder is bound and shadowed. */
+    #[cfg(target_os = "macos")]
+    let builder = builder.menu(mac_menu);
+
+    builder
         .invoke_handler(tauri::generate_handler![
             read_text,
             write_text,
@@ -55,6 +67,50 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running GATE//FOLD");
+}
+
+/// The smallest application menu that still behaves like a Mac app.
+///
+/// With no menu set, Tauri installs `Menu::default()` on macOS — App, File,
+/// Edit, View, Window, Help — and this app already draws File/Edit/View/Help
+/// in the page, so every one of them appears twice.
+///
+/// macOS always shows the application submenu, so the only question is what
+/// sits beside it, and the answer here is nothing.
+///
+/// THE EDIT ITEMS LIVE INSIDE THE APP SUBMENU, deliberately. An empty menu is
+/// the obvious fix and it is wrong: Cmd+Q and Cmd+C/V/X/A in a WKWebView text
+/// field are key equivalents attached TO menu items, not app-level defaults,
+/// so removing the menu would stop the text dialog taking pasted input.
+/// macOS looks through the whole main menu for key equivalents regardless of
+/// which submenu holds them — so folding them in here keeps every shortcut
+/// working while leaving the menu bar showing one item instead of six.
+#[cfg(target_os = "macos")]
+fn mac_menu(app: &tauri::AppHandle) -> tauri::Result<tauri::menu::Menu<tauri::Wry>> {
+    use tauri::menu::{MenuBuilder, SubmenuBuilder};
+
+    // The title is ignored: macOS labels the first submenu with the bundle
+    // name whatever is passed here.
+    let app_menu = SubmenuBuilder::new(app, "GATE//FOLD")
+        .about(None)
+        .separator()
+        .undo()
+        .redo()
+        .separator()
+        .cut()
+        .copy()
+        .paste()
+        .select_all()
+        .separator()
+        .services()
+        .separator()
+        .hide()
+        .hide_others()
+        .separator()
+        .quit()
+        .build()?;
+
+    MenuBuilder::new(app).items(&[&app_menu]).build()
 }
 
 // ── files ───────────────────────────────────────────────

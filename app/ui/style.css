@@ -33,6 +33,22 @@ body {
     -webkit-user-select: none;
 }
 
+/* THE CARVE-OUT, and it is not optional on macOS.
+   Chromium exempts the inner editor of a form control from an inherited
+   user-select:none. WebKit does NOT — so in WKWebView the rule above reaches
+   into every input and textarea and makes them uneditable. They still focus,
+   still show a caret, and still swallow every keystroke.
+   That is invisible on Windows and total on a Mac: it made the ADD TEXT
+   dialog take no input at all, which read as "the text disappeared", and it
+   made the hex fields and the filename box un-typable too.
+   tests/wiring.test.mjs asserts both halves of this pair. */
+input,
+textarea,
+[contenteditable] {
+    user-select: text;
+    -webkit-user-select: text;
+}
+
 /* The shell's .workspace has no min-height; this app needs its flex children
    able to shrink below their content. */
 .workspace {
