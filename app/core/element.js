@@ -46,6 +46,22 @@
 
     function isWave(type) { return WAVE_TYPES.indexOf(type) !== -1; }
 
+    /* Fill and stroke are part of how every element is drawn EXCEPT an image,
+       which draws its own pixels. ui/import.js stamps 'none' on both when it
+       places one, so that touching the stroke width slider cannot draw a
+       border round a photo — and ui/props.js must not read that back into the
+       panel. The panel's colours are also the style the NEXT element is born
+       with, so one import would otherwise leave every later shape and every
+       later line of text with no fill and no stroke: drawn, counted,
+       selectable, and completely invisible. That was the bug.
+
+       Unknown types are stylable. A type this list has not heard of is far
+       more likely to be a shape than a second kind of bitmap, and the failure
+       from guessing wrong that way is visible rather than silent. */
+    const STYLELESS_TYPES = ['image'];
+
+    function stylable(type) { return STYLELESS_TYPES.indexOf(type) === -1; }
+
     /** The extra fields a type carries beyond COMMON. */
     function extrasFor(type) {
         if (isWave(type)) return WAVE;
@@ -134,6 +150,8 @@
         SHAPE_TYPES: SHAPE_TYPES,
         COMMON: COMMON,
         isWave: isWave,
+        STYLELESS_TYPES: STYLELESS_TYPES,
+        stylable: stylable,
         defaultsFor: defaultsFor,
         create: create,
         normalize: normalize,

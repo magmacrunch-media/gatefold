@@ -53,6 +53,17 @@
         if (App.layers) App.layers.render();
     }
 
+    /* The colour and stroke controls stay live while an image is selected,
+       because they are also the style the NEXT element is born with. What
+       they write must not land on the image: ui/import.js puts 'none' on its
+       fill and stroke on purpose, and a stroke width dragged over a selected
+       photo would otherwise draw a border round it. */
+    function applyStyle(fn) {
+        const el = S().selectedElement();
+        if (el && !App.element.stylable(el.type)) return;
+        apply(fn);
+    }
+
     /* ── colour pairs ──
        A <input type="color"> and a hex field that must agree. Both write the
        element; each writes the other. */
@@ -70,7 +81,7 @@
                 App.canvas.schedule();
                 return;
             }
-            apply((el) => { S().beginStroke(); el[prop] = value; });
+            applyStyle((el) => { S().beginStroke(); el[prop] = value; });
         };
 
         picker.addEventListener('input', () => set(picker.value, false));
@@ -105,6 +116,7 @@
             if (syncing) return;
             S().beginStroke();
             if (o.onInput) o.onInput(read(raw));
+            else if (o.style) applyStyle((el) => { el[prop] = read(raw); });
             else apply((el) => { el[prop] = read(raw); });
         });
         input.addEventListener('change', () => S().commitStroke());
@@ -142,25 +154,34 @@
 
         syncing = true;
         try {
-            if (el.fill && el.fill !== 'none') {
-                $('fillColor').value = el.fill;
-                $('fillHex').value = el.fill;
-                $('noFillBtn').classList.remove('active');
-            } else if (el.fill === 'none') {
-                $('noFillBtn').classList.add('active');
-            }
+            /* ONLY FOR A TYPE THESE CONTROLS DESCRIBE. An image carries
+               fill: 'none', stroke: 'none' as placeholders — ui/import.js
+               says why — and reading those back latches the NO-FILL and
+               NO-STROKE buttons on. currentStyle() reads those same two
+               buttons to decide what every new element is born with, so one
+               import used to leave all later text and shapes with no fill
+               and no stroke: created, counted, selectable and invisible. */
+            if (App.element.stylable(el.type)) {
+                if (el.fill && el.fill !== 'none') {
+                    $('fillColor').value = el.fill;
+                    $('fillHex').value = el.fill;
+                    $('noFillBtn').classList.remove('active');
+                } else if (el.fill === 'none') {
+                    $('noFillBtn').classList.add('active');
+                }
 
-            if (el.stroke && el.stroke !== 'none') {
-                $('strokeColor').value = el.stroke;
-                $('strokeHex').value = el.stroke;
-                $('noStrokeBtn').classList.remove('active');
-            } else if (el.stroke === 'none') {
-                $('noStrokeBtn').classList.add('active');
-            }
+                if (el.stroke && el.stroke !== 'none') {
+                    $('strokeColor').value = el.stroke;
+                    $('strokeHex').value = el.stroke;
+                    $('noStrokeBtn').classList.remove('active');
+                } else if (el.stroke === 'none') {
+                    $('noStrokeBtn').classList.add('active');
+                }
 
-            if (el.strokeWidth) {
-                $('strokeWidth').value = el.strokeWidth;
-                $('strokeWidthVal').textContent = el.strokeWidth;
+                if (el.strokeWidth) {
+                    $('strokeWidth').value = el.strokeWidth;
+                    $('strokeWidthVal').textContent = el.strokeWidth;
+                }
             }
 
             if (el.type === 'text') {
@@ -219,7 +240,7 @@
         wireColorPair('strokeColor', 'strokeHex', 'stroke');
         wireColorPair('bgColor', 'bgHex', 'bg');
 
-        wireRange('strokeWidth', 'strokeWidthVal', 'strokeWidth');
+        wireRange('strokeWidth', 'strokeWidthVal', 'strokeWidth', { style: true });
         wireRange('rotation', 'rotationVal', 'rotation', { format: (v) => v + '°' });
         wireRange('opacity', 'opacityVal', 'opacity', { format: (v) => v + '%' });
         wireRange('wavelength', 'wavelengthVal', 'wavelength');
@@ -248,7 +269,7 @@
                 const btn = $(btnId);
                 btn.classList.toggle('active');
                 const off = btn.classList.contains('active');
-                apply((el) => {
+                applyStyle((el) => {
                     S().pushUndo();
                     el[prop] = off ? 'none' : $(pickerId).value;
                 });

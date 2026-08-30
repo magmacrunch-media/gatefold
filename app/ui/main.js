@@ -86,7 +86,10 @@
             $('fillHex').value = color;
             $('noFillBtn').classList.remove('active');
             const el = App.session.selectedElement();
-            if (el) {
+            // Not onto an image: it has no fill to sample onto, and
+            // overwriting its 'none' is what ui/props.js is careful not
+            // to do either.
+            if (el && App.element.stylable(el.type)) {
                 App.session.pushUndo();
                 el.fill = color;
                 App.canvas.schedule();

@@ -122,9 +122,18 @@
     function add(x, y) {
         ask('ADD TEXT', {}).then(function (answer) {
             if (!answer) return;
-            App.session.add(App.element.create('text', Object.assign(
+            const el = App.element.create('text', Object.assign(
                 { x: x, y: y }, App.props.currentStyle(), answer
-            )));
+            ));
+            App.session.add(el);
+            /* Text with neither a fill nor a stroke draws nothing at all.
+               That is a legitimate thing to ask a SHAPE for and never a
+               thing anyone means by "add text", so say so rather than
+               leaving an element that is selected and counted and cannot
+               be seen — the same silence as the bug this used to be. */
+            if (el.fill === 'none' && el.stroke === 'none' && window.Toast) {
+                Toast.show('THAT TEXT HAS NO FILL AND NO STROKE');
+            }
         }).catch(fail);
     }
 

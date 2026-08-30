@@ -112,4 +112,20 @@ export default function () {
         );
         eq(missing, [], 'ids the code looks for that the markup does not define');
     });
+    /* The panel is read BOTH ways: syncFrom() writes the selected
+       element into the controls, and currentStyle() reads the same
+       controls to decide what the next element is born with. An image
+       carries fill: 'none', stroke: 'none' as placeholders, so syncing
+       one into the panel used to latch NO-FILL and NO-STROKE on and
+       leave every element created afterwards invisible. Static, like
+       everything else here — it cannot prove the guard is in the right
+       place, only that dropping it does not pass silently. */
+    test('the property panel does not sync a styleless type into itself', () => {
+        const props = readFileSync(join(UI, 'props.js'), 'utf8');
+        ok(props.includes('App.element.stylable('),
+            'ui/props.js consults element.stylable — without it an image import'
+            + ' leaves the NO-FILL and NO-STROKE toggles stuck on and every later'
+            + ' element is created invisible');
+    });
+
 }

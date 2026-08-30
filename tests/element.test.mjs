@@ -111,6 +111,29 @@ export default function (M) {
         eq(seen.size, 200, 'no repeats');
     });
 
+    /* An image carries fill: 'none', stroke: 'none' as placeholders, and
+       ui/props.js reads a selected element into the panel that also
+       decides what the NEXT element is born with. Reading those two back
+       left every later shape and every later line of text with no fill
+       and no stroke — created, counted, selectable and invisible. This is
+       the predicate that stops it. */
+    test('an image is not stylable; everything else is', () => {
+        eq(E.stylable('image'), false, 'an image draws its own pixels');
+        for (const type of ['text', 'rect', 'circle', 'line', 'clipart', 'star']) {
+            eq(E.stylable(type), true, type + ' has a fill and a stroke');
+        }
+        for (const type of E.WAVE_TYPES) {
+            eq(E.stylable(type), true, type + ' has a fill and a stroke');
+        }
+    });
+
+    test('an unknown type is stylable', () => {
+        eq(E.stylable('sticker'), true, 'a type this list has not heard of is far more'
+            + ' likely to be a shape than a second kind of bitmap, and guessing that way'
+            + ' fails visibly rather than silently');
+        eq(E.stylable(undefined), true, 'and so is nothing at all');
+    });
+
     test('describe labels a text element by its first line', () => {
         eq(E.describe({ type: 'text', text: 'SIDE A\nSIDE B' }), 'SIDE A', 'first line only');
         eq(E.describe({ type: 'rect' }), '', 'a shape has nothing to say');
