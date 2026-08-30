@@ -149,8 +149,12 @@
 
         if (resizing) {
             moved = true;
+            /* The canvas size is the ceiling on a text element’s font size.
+               Without it a corner dragged past the edge scales the font
+               without limit and the renderer dies rasterising it. */
             const patch = G().resize(resizing.el, resizing.handle,
-                p.x - resizing.startX, p.y - resizing.startY, resizing.orig);
+                p.x - resizing.startX, p.y - resizing.startY, resizing.orig,
+                App.gatefold.canvasSize(doc.size));
             Object.assign(resizing.el, patch);
             if (cb.onChange) cb.onChange();
             return;

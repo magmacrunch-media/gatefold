@@ -14,6 +14,7 @@ const browser = {
     setTimeout: 'readonly', clearTimeout: 'readonly',
     setInterval: 'readonly', clearInterval: 'readonly',
     requestAnimationFrame: 'readonly', cancelAnimationFrame: 'readonly',
+    queueMicrotask: 'readonly',
     Image: 'readonly', ImageData: 'readonly', URL: 'readonly', Blob: 'readonly',
     FileReader: 'readonly', fetch: 'readonly', navigator: 'readonly',
     localStorage: 'readonly', location: 'readonly', alert: 'readonly',

@@ -395,6 +395,52 @@ dialog.modal-box:not([open]) {
     border-color: var(--accent);
 }
 
+/* ── THE TEXT DIALOG ──
+   Wider than the shared .modal-box, with a textarea big enough to see a
+   title in. It is the one dialog whose content is authored rather than
+   confirmed, and 340px of it was a keyhole.
+
+   THE BACKDROP IS NEARLY CLEAR, and that is not decoration. The dialog
+   previews the text on the canvas while it is typed, so the canvas has to
+   be visible through it. The other dialogs keep the heavy backdrop: there
+   is nothing behind a confirm worth looking at.
+
+   ui/textmodal.js centres it on the CANVAS rather than the viewport, by
+   setting margin, inset, left and top INLINE. The UA centres a modal with
+   margin:auto against inset:0, and that lands it high of the artwork,
+   because the header and tool nav above the canvas are far taller than the
+   footer below it.
+
+   NOTHING ABOUT THAT IS DONE HERE, and the margin in particular is left
+   alone. Zeroing it in the stylesheet pins the dialog to the top-left the
+   moment the JS does not run — inset:0 is still in force and margin:auto
+   was the only thing centring it. The override has to arrive as one piece,
+   from the code that also supplies the coordinates. */
+#textModal {
+    width: min(560px, 92vw);
+    max-width: 92vw;
+}
+
+#textModal::backdrop {
+    background: rgba(0, 0, 0, 0.18);
+}
+
+#textModal .modal-textarea {
+    min-height: 160px;
+}
+
+/* The colour rows need to take the space the label leaves, or the hex
+   field is squeezed to nothing next to a fixed-width swatch. */
+#textModal .modal-row .color-row {
+    flex: 1;
+    min-width: 0;
+}
+
+#textModal .modal-row > .prop-label {
+    width: 52px;
+    flex: none;
+}
+
 .modal-row {
     display: flex;
     align-items: center;

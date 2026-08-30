@@ -215,6 +215,32 @@ export default function (M) {
             `id ${fresh.id} does not collide with the loaded ${loadedIds.length}`);
     });
 
+    /* A FILE CAN SAY ANYTHING, and one number in it can take the renderer
+       down. A text element whose fontSize ran away before resize() capped it
+       would be rasterised at that size on the first frame after opening, so
+       the crash would come back every time the wrecked project was opened.
+       Repaired on load rather than refused: the cover is still wanted. */
+    test('a runaway font size in a file is clamped on load', () => {
+        A.reset();
+        A.get().elements.push(M.element.create('text', { text: 'A', fontSize: 40000 }));
+        const text = A.stringify();
+
+        A.reset();
+        A.parse(text);
+        const el = A.get().elements.find((e) => e.type === 'text');
+        eq(el.fontSize, M.geometry.clampFontSize(40000, A.canvasSize(A.get().size)),
+            'clamped against this document’s own canvas');
+        ok(el.fontSize <= A.canvasSize(A.get().size), 'and no larger than the cover');
+    });
+
+    test('an ordinary font size survives a round trip untouched', () => {
+        A.reset();
+        A.get().elements.push(M.element.create('text', { text: 'A', fontSize: 72 }));
+        const text = A.stringify();
+        A.reset();
+        A.parse(text);
+        eq(A.get().elements.find((e) => e.type === 'text').fontSize, 72, 'unchanged');
+    });
     /* ── housekeeping ── */
 
     test('the snapshot is deep, so undo cannot alias the live document', () => {

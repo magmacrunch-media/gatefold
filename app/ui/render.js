@@ -379,6 +379,12 @@
      *
      * opts.selectedId  draw the chrome around this element; null or absent
      *                  means none, which is what an export passes.
+     * opts.preview     one element drawn last and owned by nobody — the text
+     *                  being typed in the ADD TEXT dialog, before it exists.
+     *                  It is NOT in doc.elements on purpose: an element in
+     *                  the document is counted by the stats, listed by the
+     *                  layers panel and reachable by undo, and a preview that
+     *                  might still be cancelled is none of those things.
      * opts.measure     the text measurer (see core/geometry.js).
      * opts.width/height  the surface, in document units.
      */
@@ -392,6 +398,9 @@
         ctx.fillRect(0, 0, w, h);
 
         for (const el of doc.elements) drawElement(ctx, el, o.measure);
+
+        // Last, so it reads as being on top of the artwork it will join.
+        if (o.preview) drawElement(ctx, o.preview, o.measure);
 
         if (o.selectedId != null) {
             const sel = doc.elements.find((el) => el.id === o.selectedId);

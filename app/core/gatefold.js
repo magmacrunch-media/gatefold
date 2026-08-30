@@ -203,6 +203,18 @@
         next.size = Object.assign(defaultSize(), d.size);
         if (d.size && d.size.trim) next.size.trim = Object.assign({}, next.size.trim, d.size.trim);
 
+        /* A FILE CAN SAY ANYTHING, and one number in it can take the
+           renderer down: a text element whose fontSize ran away before this
+           build capped it would be rasterised at that size on the first
+           frame after opening. Clamped against this document’s own canvas,
+           so opening a wrecked project repairs it instead of repeating it. */
+        const px = canvasSize(next.size);
+        for (const el of next.elements) {
+            if (el && el.type === 'text') {
+                el.fontSize = App.geometry.clampFontSize(el.fontSize || 48, px);
+            }
+        }
+
         App.artstore.adopt(d.art);
         App.element.seedIds(next.elements);
 

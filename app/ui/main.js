@@ -174,4 +174,16 @@
     App.session.render();
 
     if (App.fs) App.fs.logLine('boot', 'ui attached', App.tier.current.name);
+
+    /* THE LINE THAT IS MISSING WHEN IT MATTERS. kit/boot.js already logs
+       anything JavaScript throws, so a crash with no ERROR in the file was
+       not JavaScript — it was the renderer dying under us, which is what a
+       window that goes black is. That case and an ordinary quit looked
+       identical in the log, because neither wrote anything at the end.
+
+       A clean exit writes this. A renderer that dies cannot. So the next
+       black window is legible: boot lines, then nothing. */
+    window.addEventListener('pagehide', function () {
+        if (App.fs && App.fs.logLine) App.fs.logLine('boot', 'page closing');
+    });
 }());

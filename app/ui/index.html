@@ -496,6 +496,26 @@
             <input type="range" id="modalFontSize" min="8" max="200" value="48" class="range-input">
             <span class="range-val" id="modalFontSizeVal">48</span>
         </div>
+        <!-- Fill and stroke here as well as in the property panel: the panel
+             has to be set BEFORE the dialog opens, which means knowing what
+             you want before you have seen it. These are seeded from the panel
+             and written back to it on ADD, so the two never disagree. -->
+        <div class="modal-row">
+            <label class="prop-label">FILL</label>
+            <div class="color-row">
+                <input type="color" id="modalFillColor" value="#ffffff" class="color-input">
+                <input type="text" id="modalFillHex" class="color-hex-input" value="#ffffff" maxlength="7">
+                <button class="no-fill-btn" id="modalNoFillBtn" title="No fill">&#8210;</button>
+            </div>
+        </div>
+        <div class="modal-row">
+            <label class="prop-label">STROKE</label>
+            <div class="color-row">
+                <input type="color" id="modalStrokeColor" value="#000000" class="color-input">
+                <input type="text" id="modalStrokeHex" class="color-hex-input" value="#000000" maxlength="7">
+                <button class="no-fill-btn" id="modalNoStrokeBtn" title="No stroke">&#8210;</button>
+            </div>
+        </div>
         <div class="modal-btns">
             <button class="action-btn" id="modalCancel">CANCEL</button>
             <button class="export-btn" id="modalAdd">ADD TEXT</button>
@@ -516,7 +536,7 @@
          Cargo.toml. The web build has no binary to ask, which is why it is in
          the markup at all. -->
     <footer>
-        <button class="footer-text" id="credits-link">GATE//FOLD <span id="app-version">v1.10.2</span> &mdash; <span>MAGMACRUNCH MEDIA</span></button>
+        <button class="footer-text" id="credits-link">GATE//FOLD <span id="app-version">v1.10.3</span> &mdash; <span>MAGMACRUNCH MEDIA</span></button>
     </footer>
 
     <script src="../shell/toast.js"></script>

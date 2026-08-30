@@ -288,6 +288,43 @@ export default function (M) {
         eq(G.resize({ type: 'text' }, 'br', -299, -399, ob).fontSize, 8, 'floors at 8');
     });
 
+    /* THE CEILING, and the case that matters most is the last one.
+
+       resize() floored the font size and left the top open, so a corner
+       handle dragged past the canvas produced a size in the tens of
+       thousands. ui/render.js then asks the engine to rasterise and stroke
+       glyph outlines at that size every frame, which kills the renderer:
+       the window goes black and nothing is logged, because no JavaScript
+       threw. */
+    test('a font size cannot be dragged past the canvas', () => {
+        const ob = { x: 0, y: 0, w: 300, h: 400, fontSize: 50 };  // diagonal 500
+        const p = G.resize({ type: 'text' }, 'br', 30000, 40000, ob, 1024);
+        eq(p.fontSize, 1024, 'clamped to the canvas, not scaled to five figures');
+    });
+
+    test('the canvas is the cap, so a bigger canvas allows a bigger font', () => {
+        const ob = { x: 0, y: 0, w: 300, h: 400, fontSize: 50 };
+        eq(G.resize({ type: 'text' }, 'br', 30000, 40000, ob, 4096).fontSize, 4096,
+            'a 4096 cover can hold a 4096px letter');
+        eq(G.resize({ type: 'text' }, 'br', 30000, 40000, ob, 512).fontSize, 512,
+            'and a 512 one cannot');
+    });
+
+    test('a caller that passes no canvas size still gets a cap', () => {
+        const ob = { x: 0, y: 0, w: 300, h: 400, fontSize: 50 };
+        eq(G.resize({ type: 'text' }, 'br', 30000, 40000, ob).fontSize, G.MAX_FONT_FALLBACK,
+            'the fallback is the largest canvas the app offers — an UNBOUNDED'
+            + ' default is the shape of the bug this cap exists for, so the'
+            + ' forgetful caller is merely generous rather than fatal');
+    });
+
+    test('clampFontSize holds both ends', () => {
+        eq(G.clampFontSize(0, 1024), G.MIN_FONT, 'nothing is still legible');
+        eq(G.clampFontSize(9999, 1024), 1024, 'and nothing is unbounded');
+        eq(G.clampFontSize(48, 1024), 48, 'an ordinary size passes through');
+        eq(G.clampFontSize(NaN, 1024), G.MIN_FONT, 'junk floors rather than propagating');
+    });
+
     test('a zero-size text does not divide by zero', () => {
         eq(G.resize({ type: 'text' }, 'br', 10, 10, { x: 0, y: 0, w: 0, h: 0, fontSize: 20 }), {},
             'no diagonal, no scale, no NaN');

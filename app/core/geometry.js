@@ -42,6 +42,31 @@
     const MIN_SIZE = 2;
     const MIN_FONT = 8;
 
+    /* A CEILING ON FONT SIZE, AND THE FALLBACK IS THE POINT.
+
+       resize() scales a text element's fontSize by how far the corner was
+       dragged. It floored the result and left the top open, so a handle
+       pulled well past the canvas produced a size in the tens of thousands
+       — and ui/render.js then asks the engine to rasterise AND stroke glyph
+       outlines at that size on every frame. That is not slow, it is fatal:
+       the renderer dies and the window goes black, with nothing in the log,
+       because no JavaScript threw.
+
+       The cap is the canvas dimension. One letter can still fill the whole
+       cover, which is the largest thing anybody could mean.
+
+       A caller that passes no canvas size gets MAX_FONT_FALLBACK — the
+       biggest canvas the app offers — rather than no cap at all. An
+       unbounded default is the shape of the original bug, so the default
+       here is bounded and a forgetful caller is merely generous. */
+    const MAX_FONT_FALLBACK = 4096;
+
+    function clampFontSize(size, canvasPx) {
+        const max = canvasPx > 0 ? canvasPx : MAX_FONT_FALLBACK;
+        const n = Math.round(Number(size) || 0);
+        return Math.min(max, Math.max(MIN_FONT, n));
+    }
+
     const DEG = Math.PI / 180;
 
     /* ── bounds ─────────────────────────────────────────── */
@@ -265,7 +290,7 @@
      *           wanted and there is no way to say so afterwards
      *   else    a free box
      */
-    function resize(el, handle, dx, dy, orig) {
+    function resize(el, handle, dx, dy, orig, canvasPx) {
         const ob = orig;
 
         if (el.type === 'line') {
@@ -286,7 +311,7 @@
             else if (handle === 'tr') { nw = ob.w + dx; nh = ob.h - dy; }
             else { nw = ob.w - dx; nh = ob.h + dy; }
             const scale = Math.sqrt(nw * nw + nh * nh) / origDiag;
-            return { fontSize: Math.max(MIN_FONT, Math.round((ob.fontSize || 48) * scale)) };
+            return { fontSize: clampFontSize((ob.fontSize || 48) * scale, canvasPx) };
         }
 
         if (el.type === 'image' && el.aspectRatio) {
@@ -383,6 +408,9 @@
         hitTestHandle: hitTestHandle,
         angleAt: angleAt,
         rotateBy: rotateBy,
+        MIN_FONT: MIN_FONT,
+        MAX_FONT_FALLBACK: MAX_FONT_FALLBACK,
+        clampFontSize: clampFontSize,
         resize: resize,
         fit: fit,
     };

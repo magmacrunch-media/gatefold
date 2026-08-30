@@ -24,6 +24,11 @@
     let savedRevision = 0;
     let pushedDirty = null;
     let nudgeTimer = null;
+    /* The ADD TEXT dialog’s live preview. Held here rather than in the
+       document because it does not exist yet: nothing counts it, no layer
+       row names it and undo cannot reach it. ui/textmodal.js owns setting
+       and clearing it; paint() is the only reader. */
+    let preview = null;
 
     const doc = () => App.gatefold.get();
 
@@ -142,9 +147,16 @@
         if (!ctx) return;
         App.render.render(ctx, doc(), {
             selectedId: selectedId,
+            preview: preview,
             measure: App.canvas.measure,
             width: App.canvas.size(),
         });
+    }
+
+    /** Show an element that is not in the document yet; null clears it. */
+    function setPreview(el) {
+        preview = el || null;
+        App.canvas.schedule();
     }
 
     /** Everything that changed the document ends up here. */
@@ -309,6 +321,7 @@
 
         paint: paint,
         render: render,
+        setPreview: setPreview,
 
         add: add,
         remove: remove,
