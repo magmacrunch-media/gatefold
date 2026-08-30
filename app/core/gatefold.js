@@ -6,12 +6,12 @@
 // Reloading the page lost everything, silently. This file is the gap a
 // desktop build exists to close.
 //
-// The FILE FORMAT is shaped on deck-forge/app/core/deckforge.js, and the
+// The FILE FORMAT is shaped on deck-press/app/core/deckpress.js, and the
 // shape is worth copying exactly:
 //
 //   - a FORMAT_VERSION, and a refusal to open a future major
 //   - TOP_LEVEL as a declared CONSTANT rather than "whatever keys the object
-//     has". deck-forge learned this the hard way: gating on `key in doc`
+//     has". deck-press learned this the hard way: gating on `key in doc`
 //     looked equivalent and was not, because a loaded document rebuilt as a
 //     bare literal is missing every field the FILE omitted, so setting one
 //     afterwards silently did nothing. Gating on a constant makes that bug
@@ -54,7 +54,7 @@
      * The web tool's canvas was one integer, because every cover it could make
      * was a square in pixels. CD wallets, digipak panels and cassette J-cards
      * are the direction this is going, and they are millimetres with a bleed
-     * and a safe margin — so the size is stored in the shape deck-forge's
+     * and a safe margin — so the size is stored in the shape deck-press's
      * print geometry already speaks, from the first version of the format:
      *
      *   today   { unit: 'px', trim: { w, h }, bleed: 0, safe: 0 }

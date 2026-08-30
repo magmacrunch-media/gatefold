@@ -112,7 +112,7 @@ export default function () {
        so that is the one everybody looks at. The third command of the pipeline
        overwrites it with an exact nearest-neighbour render.
 
-       deck-forge documents this as prose — "a correct 32x32.png has 5 distinct
+       deck-press documents this as prose — "a correct 32x32.png has 5 distinct
        colours" — and has no test, so skipping the third command there passes
        `npm run check` in silence.
 
@@ -157,7 +157,7 @@ export default function () {
     });
 
     /* sprite-forge's favicon.svg IS the source of its desktop icon set;
-       deck-forge broke that link and has no favicon at all. One grid, both
+       deck-press broke that link and has no favicon at all. One grid, both
        outputs — so the tab and the taskbar cannot drift apart. */
     test('the favicon comes from the same grid as the icon', () => {
         const fav = decodePNG(join(ROOT, 'app', 'ui', 'favicon.png'));

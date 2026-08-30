@@ -55,7 +55,7 @@ test('index.html loads kit, core and ui in order', () => {
     eq(srcs[srcs.length - 1], 'main.js', 'main.js is last');
 });
 
-/* Source hygiene, carried over from deck-forge. A shell round-trip once baked
+/* Source hygiene, carried over from deck-press. A shell round-trip once baked
    a literal backspace (0x08) into a regex where a \b word boundary was meant:
    the pattern then matched nothing, a feature silently stopped working, and no
    test noticed because the byte is invisible in every diff and every editor.

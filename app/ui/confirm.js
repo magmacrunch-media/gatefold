@@ -1,7 +1,7 @@
 // ui/confirm.js — one question, asked the same way in both builds.
 //
 // Deliberately the kit's <dialog> rather than the native dialog('ask') the
-// desktop could use, and deck-forge's reasoning is the right one: using the
+// desktop could use, and deck-press's reasoning is the right one: using the
 // in-page modal in BOTH builds means the confirmation path is exercised every
 // time the app is opened with `npm run serve`, instead of only under Tauri
 // where it is hardest to reach. It also looks like the app — a Windows

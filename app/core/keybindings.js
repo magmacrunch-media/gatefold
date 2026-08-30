@@ -12,7 +12,7 @@
 // the tool shortcuts as a bare object at the bottom. Nothing about which keys
 // were taken was visible without reading all of it.
 //
-// Shaped on deck-forge's: ONE document listener, and each surface passes the
+// Shaped on deck-press's: ONE document listener, and each surface passes the
 // actions IT handles, so a key the current surface has no use for falls
 // through to the browser rather than being swallowed.
 //

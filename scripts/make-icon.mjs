@@ -4,7 +4,7 @@
 // of palette indices below, so changing it is an edit rather than a round trip
 // through an image editor and a re-export at eight sizes.
 //
-// Ported from deck-forge/scripts/make-icon.mjs. Everything below the DESIGNS
+// Ported from deck-press/scripts/make-icon.mjs. Everything below the DESIGNS
 // registry is that file unchanged; the design and the palette are this app's.
 // It is the second copy of this script in the family, which by the kit's own
 // rule makes it a promotion candidate — but magma-kit vendors js/ and testkit/
@@ -18,7 +18,7 @@
 //   node scripts/make-icon.mjs --icons desktop/src-tauri/icons
 //
 // The CLI produces every platform variant, which is what we want, but it scales
-// with a smooth filter — measured on deck-forge, it turned a five-colour design
+// with a smooth filter — measured on deck-press, it turned a five-colour design
 // into 165 colours at 32x32, which is the taskbar size. The third command
 // overwrites every size that is a whole multiple of the 32px grid with an exact
 // nearest-neighbour render, and rebuilds icon.ico from those.
@@ -34,7 +34,7 @@ import { deflateSync } from 'node:zlib';
 import { writeFileSync } from 'node:fs';
 
 /* THE APP'S OWN TOKENS, read off app/ui/style.css :root — not the family
-   palette approximated. deck-forge draws its icon in #ff2d78 / #00e5ff /
+   palette approximated. deck-press draws its icon in #ff2d78 / #00e5ff /
    #0d0028, which are near-misses for the tokens its own stylesheet uses: close
    enough to look right, different enough that the icon and the app are not
    actually the same colours. These five ARE the app. */
@@ -88,10 +88,10 @@ const DESIGNS = {
        and the app's subject in one shape.
 
        SQUARE panels, and that is load-bearing rather than decorative.
-       deck-forge's icon is two TALL overlapping cards — "0.70, a card's
+       deck-press's icon is two TALL overlapping cards — "0.70, a card's
        proportions" — and at 32px two apps whose icons are both a pair of
        rectangles are hard to tell apart in a taskbar. A record sleeve is
-       square, a playing card is not, and the disc is a shape deck-forge's icon
+       square, a playing card is not, and the disc is a shape deck-press's icon
        has nothing like.
 
        Drawn programmatically rather than typed as an ASCII picture: a
@@ -297,7 +297,7 @@ if (iconsDir) {
     console.log(`  icon.ico  32/64/128/256  exact`);
 } else if (favicon) {
     /* The SAME grid as the desktop icon, which is the point. sprite-forge's
-       favicon.svg is the source its icon set is generated from; deck-forge
+       favicon.svg is the source its icon set is generated from; deck-press
        broke that link and has no favicon at all. One grid, both outputs, one
        identity. */
     writeFileSync(favicon, png(32));

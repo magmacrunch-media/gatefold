@@ -4,7 +4,7 @@
 
 The desktop build of the album-cover editor that runs on magmacrunch.com. It
 is the fourth app on `magma-kit`, alongside sprite-forge, magma-ops-app and
-deck-forge, and it was ported out of `ware/album-art-maker` in the website
+deck-press, and it was ported out of `ware/album-art-maker` in the website
 repo rather than written from scratch.
 
 ## Architecture
@@ -103,14 +103,14 @@ multiple of the grid with an exact nearest-neighbour render and rebuilds
 32 and keep the CLI's output; nobody looks closely at those.
 
 The fourth writes the favicon from the SAME grid. sprite-forge's `favicon.svg`
-is the source of its desktop icon set; deck-forge broke that link and has no
+is the source of its desktop icon set; deck-press broke that link and has no
 favicon at all. One grid, both outputs, so the tab and the taskbar cannot
 drift.
 
 `tests/icon.test.mjs` asserts every pixel of `32x32.png` is exactly a palette
 colour, which a resampled file cannot be — a blend of two palette colours is by
 construction a third thing. Skip the third command and `npm run check` fails
-with the command to fix it. deck-forge documents the same rule as prose and has
+with the command to fix it. deck-press documents the same rule as prose and has
 no test, so skipping it there is silent.
 
 **Changing an icon does not rebuild the binary.** `tauri-build` emits
@@ -127,7 +127,7 @@ magma-kit 0.2.0 and what is left here is a one-line wrapper and an actions map.
 The `inStroke` latch in `ui/session.js` went with them, because 0.2.0's
 `beginStroke` is idempotent.
 
-What remains is `scripts/make-icon.mjs`, which is a copy of deck-forge's with a
+What remains is `scripts/make-icon.mjs`, which is a copy of deck-press's with a
 different design and palette. By the kit's own rule — a module gets in when a
 SECOND app has hand-rolled it — it now qualifies. It has not moved because
 magma-kit vendors `js/` and `testkit/` only: a build script would be a new
@@ -135,7 +135,7 @@ category of shared file needing a new sync path, which is more design than two
 copies strictly earns. Recorded as a candidate in `magma-kit/README.md`. Until
 it moves, edit the design here freely — the two apps' designs are supposed to
 differ — but keep the encoders below the `DESIGNS` registry in step with
-deck-forge's.
+deck-press's.
 
 ## The bugs that were fixed in the port
 
@@ -188,6 +188,40 @@ cd desktop && npm run dev     the FULL build
 `../magma-kit/scripts/sync.mjs`. Editing a vendored file in place is caught by
 `npm run check`; being behind the kit is caught by `npm run check:kit`, which
 is manual because it needs the sibling.
+
+## Releases
+
+`.github/workflows/release.yml` builds both platforms and attaches them to a
+release. Push a tag to publish; run it from the Actions tab (`workflow_dispatch`)
+to build without publishing, which is how you prove a change before tagging it.
+
+**macOS cannot be cross-compiled from Windows.** Tauri links against the system
+WebKit and produces a real `.app`, so a Mac bundle has to be built on a Mac.
+That is the whole reason CI exists here — and once Mac has to go through it,
+Windows goes too, so both halves of a release come from the same place and are
+reproducible.
+
+**The workflow checks out magma-kit alongside this repo, by name.** It has to:
+`desktop/src-tauri/Cargo.toml` declares `magma-kit = { path =
+"../../../magma-kit/crate" }`, so a lone checkout does not build. There is an
+explicit step that fails with a sentence when the sibling is missing rather
+than letting cargo's resolver explain it, because that error is opaque the
+first time you see it.
+
+macOS builds `--target universal-apple-darwin`: one `.dmg` native on both Apple
+Silicon and Intel. Bigger and slower to build, but a single download that
+cannot be the wrong one.
+
+Bumping the version means **five** files — `package.json`,
+`desktop/package.json`, `desktop/src-tauri/Cargo.toml`, `tauri.conf.json` and
+the footer in `app/ui/index.html`. `tests/version.test.mjs` fails if they
+disagree, with Cargo.toml as the source of truth. `Cargo.lock` records the
+version too, so refresh it or a `--locked` build will complain.
+
+Neither build is signed, so both systems block the first launch. See the
+install section in `README.md` for what users actually see and how to get past
+it; it is worth repeating in every release's notes, because a Mac claiming the
+app "is damaged" reads as a corrupt download rather than a missing certificate.
 
 ## Git
 

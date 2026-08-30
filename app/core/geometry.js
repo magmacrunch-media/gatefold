@@ -346,7 +346,7 @@
      * the fit IS the stored geometry, and ui/props.js re-bases origW/origH
      * from the patch.
      *
-     * `box` rather than a square size: this is the shape deck-forge's
+     * `box` rather than a square size: this is the shape deck-press's
      * print geometry already speaks, so a CD wallet or a cassette J-card is
      * the same call with a different box.
      */

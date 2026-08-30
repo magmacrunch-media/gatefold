@@ -38,7 +38,7 @@ $s.Save()
 ```
 
 Four details in there are load-bearing, all of them learned the hard way in
-deck-forge rather than here:
+deck-press rather than here:
 
 **`IconLocation` points at the exe, not at `icons\icon.ico`.** The exe carries
 the icon as a compiled resource, so there is one source rather than a loose

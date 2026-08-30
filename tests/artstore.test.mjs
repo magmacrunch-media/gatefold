@@ -1,6 +1,6 @@
 import { test, eq, ok } from './kit/assert.mjs';
 
-/* Copied from deck-forge/tests/artstore.test.mjs alongside the module itself.
+/* Copied from deck-press/tests/artstore.test.mjs alongside the module itself.
    Both move up to magma-kit in 0.2.0 — see the header on core/artstore.js —
    and until they do, this file is deliberately not diverged from its twin.
 

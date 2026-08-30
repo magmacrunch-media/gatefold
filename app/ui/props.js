@@ -2,7 +2,7 @@
 //
 // The panel's controls live in index.html and this binds them. It is
 // deliberately NOT the descriptor-driven, innerHTML-rebuilding inspector
-// deck-forge uses: this panel holds a colour input being dragged, a hex field
+// deck-press uses: this panel holds a colour input being dragged, a hex field
 // with a caret in it, and four range sliders firing `input` continuously.
 // Rebuilding the DOM under any of those loses the drag and the focus, which
 // is a worse trade than the markup being in two files.
