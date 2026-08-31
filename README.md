@@ -26,7 +26,7 @@ make the desktop build look better. See `core/tier.js`.
 
 ## Installing it
 
-Grab the latest [release](https://github.com/magmacrunchmedia/gatefold/releases).
+Grab the latest [release](https://github.com/magmacrunch-media/gatefold/releases).
 Windows x64 and macOS (one universal build, Apple Silicon and Intel).
 
 **Neither build is code-signed**, so both operating systems will stop you the
