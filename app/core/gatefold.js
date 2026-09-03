@@ -29,7 +29,18 @@
 
     const App = (window.Gatefold = window.Gatefold || {});
 
-    const FORMAT_VERSION = '1.0';
+    /* 2.0 because of PRINT FORMATS, and the guard it buys runs in the OLD
+       build rather than this one. A 1.x build handed a J-card would read
+       `unit: 'mm'` it has never heard of, canvasSize() would return 101.6, and
+       it would paint a 101-pixel canvas with every element — at coordinates
+       around 1200 — entirely off it: a blank postage stamp and no error
+       anywhere. majorOf() below exists for exactly that, and refusing with a
+       sentence that names both versions is the whole of what it is for.
+
+       The document SHAPE did not change, so MIGRATIONS is still empty and a
+       1.0 file opens untouched. The cost, stated plainly: a plain square
+       cover saved by this build no longer opens in 1.x either. */
+    const FORMAT_VERSION = '2.0';
     const FILE_TYPE = 'gatefold';
     const EXT = 'gatefold';
 
@@ -37,6 +48,10 @@
        emptyDoc(); nothing infers this from the object. */
     const TOP_LEVEL = ['name', 'size', 'bgColor', 'elements'];
 
+    /* The four squares now live in core/formats.js alongside the print
+       formats, so the picker reads one list. These stay as the default's
+       source and because the suites pin them; core/formats.js asserts the two
+       agree rather than trusting that they do. */
     const SQUARE_SIZES = [512, 1024, 2048, 4096];
     const DEFAULT_SIZE_PX = 1024;
     const DEFAULT_BG = '#ffffff';
@@ -66,6 +81,15 @@
      * later never translates existing art. None of that needs a migration —
      * which is the whole reason it is here now rather than being a bare
      * integer and a v2.0 to write later.
+     *
+     * The print sizes arrived in exactly that shape, plus `panels` and
+     * `panelAxis`; core/formats.js is the table of them.
+     *
+     * THE SIZE IS REPLACED, NEVER PATCHED. Object.assign can add a key and
+     * cannot remove one, so patching a square over a J-card would leave
+     * `panels` behind and the square would draw fold lines it does not have.
+     * The load merge below has the same property for the same reason, and it
+     * is why it starts from a full default rather than from the file.
      */
     function squareSize(px) {
         return { unit: 'px', trim: { w: px, h: px }, bleed: 0, safe: 0 };
@@ -73,7 +97,16 @@
 
     function defaultSize() { return squareSize(DEFAULT_SIZE_PX); }
 
-    /** The one number the square code paths still want. */
+    /**
+     * The one number the square code paths wanted.
+     *
+     * RETIRED — TAKE NO NEW CALLERS. It collapses a size to a single scalar,
+     * which is only meaningful when the document is a square in pixels, and
+     * on a millimetre size it hands back 101.6 as though that were a canvas
+     * dimension. core/formats.js's metrics() is what replaced it: it answers
+     * trim, surface, bleed and origin separately, because those are four
+     * different questions that used to have one wrong answer.
+     */
     function canvasSize(size) {
         return (size && size.trim && size.trim.w) || DEFAULT_SIZE_PX;
     }
@@ -207,11 +240,16 @@
            renderer down: a text element whose fontSize ran away before this
            build capped it would be rasterised at that size on the first
            frame after opening. Clamped against this document’s own canvas,
-           so opening a wrecked project repairs it instead of repeating it. */
-        const px = canvasSize(next.size);
+           so opening a wrecked project repairs it instead of repeating it.
+
+           Through formats.fontCap rather than canvasSize, because on a
+           J-card the latter is 101.6 — every piece of text in the file would
+           be clamped to a hundredth of the card and the repair would be
+           worse than the damage. */
+        const cap = App.formats.fontCap(next.size);
         for (const el of next.elements) {
             if (el && el.type === 'text') {
-                el.fontSize = App.geometry.clampFontSize(el.fontSize || 48, px);
+                el.fontSize = App.geometry.clampFontSize(el.fontSize || 48, cap);
             }
         }
 

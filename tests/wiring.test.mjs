@@ -182,4 +182,29 @@ export default function (M) {
             + ' copy, and AGENTS.md counts them');
     });
 
+    /* The four squares used to be four <div>s here AND a SQUARE_SIZES constant
+       in core/: two lists that could disagree, and adding a fifth size meant
+       remembering both. core/formats.js is the one list now, and this is what
+       stops an option being typed back into the markup. */
+    test('the size picker is generated from the registry, not typed into the markup', () => {
+        const block = html.slice(html.indexOf('id="canvasSizeDropdown"'));
+        const list = block.slice(block.indexOf('<div class="dropdown-options"'));
+        const body = list.slice(0, list.indexOf('</div>') + 6);
+        ok(!/data-value=/.test(body),
+            'no hand-typed options — ui/sizes.js writes them from core/formats.js');
+        ok(sources.includes("RetroDropdown.setup('canvasSizeDropdown'"),
+            'and the picker is still bound, wherever that call now lives');
+    });
+
+    /* The overlay has no control to proxy, so unlike every other View item it
+       cannot fall back to data-toggles for its check mark. */
+    test('the print-guides View item is dispatched and reports its own state', () => {
+        ok(/data-action="view:print-guides"/.test(html), 'the item exists');
+        ok(!/data-action="view:print-guides"[^>]*data-toggles/.test(html),
+            'and names no control, because there is none');
+        const menu = readFileSync(join(UI, 'menu.js'), 'utf8');
+        ok(menu.includes("'view:print-guides'"), 'the actions map dispatches it');
+        ok(/case 'view:print-guides'/.test(menu), 'and stateOf answers for it');
+    });
+
 }

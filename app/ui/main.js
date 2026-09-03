@@ -22,7 +22,7 @@
 
     const canvas = $('mainCanvas');
     App.canvas.init(canvas, App.session.paint);
-    App.canvas.setSize(App.gatefold.canvasSize(App.gatefold.get().size));
+    App.sizes.applyToCanvas();
 
     // One repaint path: a decoded bitmap asks the session to render, exactly
     // as every other change does.
@@ -108,13 +108,11 @@
 
     /* ── the canvas size and background ── */
 
-    RetroDropdown.setup('canvasSizeDropdown', function (value) {
-        const px = parseInt(value, 10);
-        App.session.pushUndo();
-        App.gatefold.get().size = App.gatefold.squareSize(px);
-        App.canvas.setSize(px);
-        App.session.render();
-    });
+    /* The options are generated from core/formats.js, so the picker is built
+       and bound in one place rather than being four <div>s here and four
+       numbers in core/. See ui/sizes.js for why it must populate before it
+       binds. */
+    App.sizes.init();
 
     /* ── the action buttons ── */
 

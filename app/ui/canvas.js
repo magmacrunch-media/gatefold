@@ -24,6 +24,11 @@
     let scratch = null;
     let paint = null;        // supplied by ui/session.js: what to draw
     let pending = 0;
+    /* Where the TRIM's top-left sits on the surface — the bleed, for a print
+       document, and zero for everything else. ui/render.js translates by it;
+       toCanvas() takes the same number back off. */
+    let originX = 0;
+    let originY = 0;
 
     function init(el, drawFn) {
         canvas = el;
@@ -56,28 +61,47 @@
         return scratch.measureText(String(text)).width;
     }
 
-    /** Resize the backing store. Callers pass document units. */
-    function setSize(px) {
+    /**
+     * Resize the backing store. Callers pass document units — the SURFACE,
+     * which for a print document is the trim plus bleed on all four sides.
+     *
+     * `h` may be omitted, and omitting it means a square, so any call site
+     * that predates print formats is still correct rather than subtly wrong.
+     *
+     * `origin` is where the trim's top-left lands on that surface.
+     * ui/render.js translates by it and toCanvas() subtracts it, so a pointer
+     * and a drawn pixel cannot disagree about where the artwork is.
+     */
+    function setSize(w, h, origin) {
         if (!canvas) return;
-        canvas.width = px;
-        canvas.height = px;
+        canvas.width = Math.max(1, Math.round(w));
+        canvas.height = Math.max(1, Math.round(h == null ? w : h));
+        originX = (origin && origin.x) || 0;
+        originY = (origin && origin.y) || 0;
         schedule();
     }
 
-    function size() { return canvas ? canvas.width : 0; }
+    function width() { return canvas ? canvas.width : 0; }
+    function height() { return canvas ? canvas.height : 0; }
+    function origin() { return { x: originX, y: originY }; }
 
     /**
-     * A pointer event in canvas coordinates.
+     * A pointer event in DOCUMENT coordinates.
      *
      * The element is laid out to fit the window and the backing store is
      * 512..4096, so the two scales differ by a lot; every hit test depends on
      * this conversion being exact.
+     *
+     * The origin comes off at the end, and it is the identical float
+     * ui/render.js added — not a second scale factor and not a rounding — so
+     * a click in the bleed lands at a negative coordinate, which is exactly
+     * where the artwork there is.
      */
     function toCanvas(e) {
         const r = canvas.getBoundingClientRect();
         return {
-            x: (e.clientX - r.left) * (canvas.width / r.width),
-            y: (e.clientY - r.top) * (canvas.height / r.height),
+            x: (e.clientX - r.left) * (canvas.width / r.width) - originX,
+            y: (e.clientY - r.top) * (canvas.height / r.height) - originY,
         };
     }
 
@@ -116,7 +140,9 @@
         context: context,
         measure: measure,
         setSize: setSize,
-        size: size,
+        width: width,
+        height: height,
+        origin: origin,
         toCanvas: toCanvas,
         scale: scale,
         schedule: schedule,

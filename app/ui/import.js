@@ -48,17 +48,29 @@
      * Register a payload and place an element for it.
      *
      * `at` is where it was dropped, or absent to centre it. Either way the
-     * image arrives at 40% of the canvas, aspect kept — big enough to see,
-     * small enough to position.
+     * image arrives at 40% of the PANEL it lands on, aspect kept — big enough
+     * to see, small enough to position.
+     *
+     * The panel and not the artboard, because an import that lands straddling
+     * the spine of a J-card has to be dragged off it before it can even be
+     * looked at. A document with no panels is one box — the trim — so a
+     * square cover gets exactly the arithmetic it always had.
      */
     async function place(dataUrl, meta, at) {
         const img = await decode(dataUrl);
-        const px = App.gatefold.canvasSize(App.gatefold.get().size);
+        const m = App.formats.metrics(App.gatefold.get().size);
+        const box = (at && App.panels.at(m, at.x, at.y)) || App.panels.primary(m);
         const aspect = img.width / img.height;
 
-        const target = px * IMPORT_FRACTION;
-        const w = aspect >= 1 ? target : target * aspect;
-        const h = aspect >= 1 ? target / aspect : target;
+        const target = box.w * IMPORT_FRACTION;
+        let w = aspect >= 1 ? target : target * aspect;
+        let h = aspect >= 1 ? target / aspect : target;
+        /* And never past the panel. 40% of a 4-inch card's WIDTH is three
+           times the height of its spine; a square is unaffected, since 40%
+           never trips 90%. */
+        const k = Math.min(1, (box.w * 0.9) / w, (box.h * 0.9) / h);
+        w *= k;
+        h *= k;
 
         const ref = App.artstore.register(dataUrl, Object.assign({
             kind: 'raster', w: img.width, h: img.height,
@@ -70,8 +82,8 @@
         await App.images.ready([ref]);
 
         App.session.add(App.element.create('image', {
-            x: at ? at.x - w / 2 : (px - w) / 2,
-            y: at ? at.y - h / 2 : (px - h) / 2,
+            x: at ? at.x - w / 2 : box.x + (box.w - w) / 2,
+            y: at ? at.y - h / 2 : box.y + (box.h - h) / 2,
             w: w, h: h,
             src: ref,
             aspectRatio: aspect,

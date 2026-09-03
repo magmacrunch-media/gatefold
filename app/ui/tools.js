@@ -164,9 +164,13 @@
                the element actually is rather than from where it started —
                otherwise a drag that crosses the centre accumulates the
                correction and drifts. */
-            const snap = App.guides.snapToCentre(
+            /* Centred on the PANEL the element is on, not on the artboard.
+               On a J-card the artboard centre is a point inside the spine;
+               a document with no panels resolves to the whole trim, which is
+               exactly what this did before. */
+            const snap = App.panels.snapIn(
                 G().bounds(dragging.el, measure()),
-                App.gatefold.canvasSize(doc.size),
+                App.formats.metrics(doc.size),
                 SNAP_SCREEN_PX * App.canvas.scale());
             dragging.el.x += snap.dx;
             dragging.el.y += snap.dy;
@@ -183,7 +187,7 @@
                without limit and the renderer dies rasterising it. */
             const patch = G().resize(resizing.el, resizing.handle,
                 p.x - resizing.startX, p.y - resizing.startY, resizing.orig,
-                App.gatefold.canvasSize(doc.size));
+                App.formats.fontCap(doc.size));
             Object.assign(resizing.el, patch);
             if (cb.onChange) cb.onChange();
             return;

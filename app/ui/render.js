@@ -31,6 +31,16 @@
     const GUIDE = '#ff3d6e';
     const CHROME_FONT = '14px "Courier Prime"';
 
+    /* THREE WEIGHTS, BECAUSE THEY MEAN THREE DIFFERENT THINGS. A fold is
+       where the card BENDS, a safe line is where a title stops being safe,
+       and the trim is where the knife goes. Drawing them alike would say the
+       card can be cut at a fold, which is the one mistake this overlay exists
+       to prevent. All three are non-printing: only ui/session.js asks for
+       them, and ui/export.js does not. */
+    const FOLD = GUIDE;
+    const SAFE = 'rgba(255, 61, 110, 0.45)';
+    const TRIM = 'rgba(160, 160, 176, 0.7)';
+
     /* ── paint helpers ──────────────────────────────────── */
 
     function hasFill(el) { return el.fill && el.fill !== 'none'; }
@@ -378,21 +388,69 @@
 
     /* ── the guides ─────────────────────────────────────── */
 
-    /** Edge to edge, hairline, over everything. */
-    function drawGuides(ctx, guides, w, h) {
+    /* A hairline scaled to the canvas, not fixed at 1: at 4096 a one-unit
+       line is a quarter of a screen pixel and effectively invisible, which is
+       the size at which a guide is most wanted. Off the TRIM rather than the
+       surface, so a document's bleed does not change how thick its guides
+       look. */
+    function hairline(m) { return Math.max(1, Math.round(m.trim.w / 512)); }
+
+    /* Edge to edge means edge of the SURFACE — a centre line that stopped at
+       the trim would leave the bleed looking like somewhere the guide does
+       not apply. Coordinates are post-translate, so the surface runs from
+       -bleed to trim + bleed. */
+    function spanLine(ctx, g, m) {
+        const b = m.bleed || 0;
+        if (g.axis === 'x') {
+            ctx.moveTo(g.at, -b);
+            ctx.lineTo(g.at, m.trim.h + b);
+        } else {
+            ctx.moveTo(-b, g.at);
+            ctx.lineTo(m.trim.w + b, g.at);
+        }
+    }
+
+    /** The drag's alignment lines. Over everything, including the chrome. */
+    function drawGuides(ctx, guides, m) {
         ctx.save();
         ctx.strokeStyle = GUIDE;
-        /* Scaled to the canvas, not fixed at 1: at 4096 a one-unit line is a
-           quarter of a screen pixel and effectively invisible, which is the
-           size at which a guide is most wanted. */
-        ctx.lineWidth = Math.max(1, Math.round(w / 512));
+        ctx.lineWidth = hairline(m);
         ctx.setLineDash([]);
         ctx.beginPath();
-        for (const g of guides) {
-            if (g.axis === 'x') { ctx.moveTo(g.at, 0); ctx.lineTo(g.at, h); }
-            else { ctx.moveTo(0, g.at); ctx.lineTo(w, g.at); }
-        }
+        for (const g of guides) spanLine(ctx, g, m);
         ctx.stroke();
+        ctx.restore();
+    }
+
+    /**
+     * The print overlay: the trim box, the folds, and the safe margin.
+     *
+     * Under the selection chrome rather than over it, unlike the drag guides
+     * — these are always on while a print format is open, and a permanent
+     * overlay that draws on top of the handles is a permanent obstruction.
+     */
+    function drawPanelLines(ctx, lines, m) {
+        const lw = hairline(m);
+        ctx.save();
+
+        ctx.strokeStyle = TRIM;
+        ctx.lineWidth = lw;
+        ctx.setLineDash([]);
+        ctx.strokeRect(0, 0, m.trim.w, m.trim.h);
+
+        ctx.strokeStyle = FOLD;
+        ctx.beginPath();
+        for (const l of lines) if (l.kind === 'fold') spanLine(ctx, l, m);
+        ctx.stroke();
+
+        /* Dashed, and the dash is scaled too — a fixed 6px pattern on a 4096
+           canvas reads as a solid line. */
+        ctx.strokeStyle = SAFE;
+        ctx.setLineDash([lw * 8, lw * 8]);
+        ctx.beginPath();
+        for (const l of lines) if (l.kind === 'safe') spanLine(ctx, l, m);
+        ctx.stroke();
+
         ctx.restore();
     }
 
@@ -411,22 +469,44 @@
      *                  the document is counted by the stats, listed by the
      *                  layers panel and reachable by undo, and a preview that
      *                  might still be cancelled is none of those things.
+     * opts.panels      the fold, safe and trim lines to draw over the
+     *                  artwork: core/panels.js's lines(). Present only when
+     *                  the editor asks for them, and NEVER on an export —
+     *                  the same mechanism that keeps the guides and the
+     *                  selection chrome out of the file.
      * opts.measure     the text measurer (see core/geometry.js).
-     * opts.width/height  the surface, in document units.
+     * opts.metrics     core/formats.js's metrics() for this document, passed
+     *                  in when the caller already has it.
+     * opts.width/height  the SURFACE, in document units — trim plus bleed.
      */
     function render(ctx, doc, opts) {
         const o = opts || {};
-        const w = o.width || App.gatefold.canvasSize(doc.size);
-        const h = o.height || w;
+        const m = o.metrics || App.formats.metrics(doc.size);
+        const w = o.width || m.surface.w;
+        const h = o.height || m.surface.h;
 
         ctx.save();
+        /* The background fills the WHOLE SURFACE, bleed included. That is what
+           bleed is for: the colour has to run past where the knife lands. */
         ctx.fillStyle = doc.bgColor || '#ffffff';
         ctx.fillRect(0, 0, w, h);
+
+        /* THE ORIGIN MOVES TO THE TRIM'S TOP-LEFT, and everything below is in
+           document coordinates from there. Art that runs into the bleed sits
+           at negative x or y — exactly what core/gatefold.js's header
+           promised from version 1.0, and why changing a format's bleed later
+           never translates a single element. For a pixel document the bleed
+           is 0 and this is the identity, so no square cover moves by so much
+           as a pixel. */
+        ctx.translate(m.origin.x, m.origin.y);
 
         for (const el of doc.elements) drawElement(ctx, el, o.measure);
 
         // Last, so it reads as being on top of the artwork it will join.
         if (o.preview) drawElement(ctx, o.preview, o.measure);
+
+        // Under the chrome: always-on lines must not obscure the handles.
+        if (o.panels && o.panels.length) drawPanelLines(ctx, o.panels, m);
 
         if (o.selectedId != null) {
             const sel = doc.elements.find((el) => el.id === o.selectedId);
@@ -435,7 +515,7 @@
 
         // Over the chrome as well as the artwork: a guide that a selection box
         // crosses is a guide you cannot read at the moment you need it.
-        if (o.guides && o.guides.length) drawGuides(ctx, o.guides, w, h);
+        if (o.guides && o.guides.length) drawGuides(ctx, o.guides, m);
         ctx.restore();
     }
 
@@ -444,6 +524,7 @@
         drawElement: drawElement,
         drawSelection: drawSelection,
         drawGuides: drawGuides,
+        drawPanelLines: drawPanelLines,
         applyRotation: applyRotation,
         DRAW: DRAW,
     };

@@ -321,8 +321,20 @@
             $(btnId).addEventListener('click', () => apply((el) => {
                 if (el.type !== 'image') return;
                 S().pushUndo();
-                const px = App.gatefold.canvasSize(App.gatefold.get().size);
-                Object.assign(el, App.geometry.fit(el, mode, { x: 0, y: 0, w: px, h: px }));
+                const m = App.formats.metrics(App.gatefold.get().size);
+                /* THE PANEL THE PHOTO IS ON, not the whole artboard. Fitting
+                   a J-card's image to the strip stretches it across the
+                   front, the spine and the back, which is a thing you might
+                   want and is never what this button meant. A document with
+                   no panels is one box — the trim — so a square cover gets
+                   byte-identical behaviour without a branch. */
+                const panel = App.panels.at(m, el.x + el.w / 2, el.y + el.h / 2)
+                    || App.panels.primary(m);
+                /* COVER goes to the bleed, CONTAIN stops at the panel. Cover
+                   means "no white edge when the knife drifts"; contain means
+                   "all of it is visible", and visible stops at a fold. */
+                const box = mode === 'cover' ? App.panels.bleedBox(m, panel) : panel;
+                Object.assign(el, App.geometry.fit(el, mode, box));
                 // Re-base, so 100% now means "as fitted".
                 el.origW = el.w;
                 el.origH = el.h;

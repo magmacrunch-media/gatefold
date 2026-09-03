@@ -51,14 +51,23 @@
      * drawn into the same canvas as the artwork.
      */
     function compose(doc) {
-        const px = App.gatefold.canvasSize(doc.size);
+        /* THE SURFACE, so a print document exports at its own dpi WITH its
+           bleed — that is the file a duplicator asks for. A square cover has
+           no bleed, so its surface is its trim and nothing about it changes.
+
+           No `panels` and no `guides` are passed, which is the whole of what
+           makes the fold lines and the safe margin non-printing: they are not
+           suppressed here, they are simply never asked for. */
+        const m = App.formats.metrics(doc.size);
         const c = document.createElement('canvas');
-        c.width = px;
-        c.height = px;
+        c.width = m.surface.w;
+        c.height = m.surface.h;
         App.render.render(c.getContext('2d'), doc, {
             selectedId: null,
             measure: App.canvas.measure,
-            width: px,
+            metrics: m,
+            width: m.surface.w,
+            height: m.surface.h,
         });
         return c;
     }

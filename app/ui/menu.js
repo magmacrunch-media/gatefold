@@ -43,6 +43,11 @@
         // check mark, only for the click.
         'view:layers': (item) => document.getElementById(item.dataset.toggles).click(),
         'view:reference': (item) => document.getElementById(item.dataset.toggles).click(),
+        /* The one View item with no control to proxy: the fold and safe-margin
+           overlay is a property of the frame, not of a panel that can be
+           opened. So it owns its state in ui/session.js and reports it
+           through stateOf below. */
+        'view:print-guides': () => App.session.setPanelLines(!App.session.panelLinesOn()),
 
         'help:reference': () => App.helpUI.reference(),
         'help:credits': () => App.helpUI.credits(),
@@ -56,6 +61,12 @@
             case 'edit:copy':
             case 'edit:delete': return { disabled: !App.session.selectedElement() };
             case 'edit:paste': return { disabled: !App.session.hasClipboard() };
+            /* Dead on a square cover, which has no folds and no safe margin
+               to show — the item would tick on and change nothing. */
+            case 'view:print-guides': return {
+                checked: App.session.panelLinesOn(),
+                disabled: !App.formats.metrics(App.gatefold.get().size).panels.length,
+            };
             default: return null;   // the kit falls back to data-toggles
         }
     }

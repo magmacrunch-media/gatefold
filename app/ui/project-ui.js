@@ -139,7 +139,12 @@
     function adopt(path) {
         currentPath = path;
         App.images.reset();
-        App.canvas.setSize(App.gatefold.canvasSize(App.gatefold.get().size));
+        /* Inline rather than through ui/sizes.js, which would be a wider
+           dependency than this module has ever needed — its suite stubs
+           App.canvas with four lines on purpose, and core/formats.js is
+           already in that sandbox. */
+        const m = App.formats.metrics(App.gatefold.get().size);
+        App.canvas.setSize(m.surface.w, m.surface.h, m.origin);
         App.session.resetHistory();
         App.session.render();
         App.props.syncFrom(null);
@@ -149,8 +154,10 @@
     /** The controls that show document state rather than element state. */
     function syncCanvasControls() {
         const doc = App.gatefold.get();
-        const px = App.gatefold.canvasSize(doc.size);
-        if (window.RetroDropdown) RetroDropdown.setValue('canvasSizeDropdown', String(px));
+        /* Guarded: the suite runs this module without the UI layer, and the
+           picker knows how to say CUSTOM for a size no preset matches, which
+           is a question only ui/sizes.js can answer. */
+        if (App.sizes) App.sizes.syncControls();
         const bg = document.getElementById('bgColor');
         const bgHex = document.getElementById('bgHex');
         if (bg) bg.value = doc.bgColor;

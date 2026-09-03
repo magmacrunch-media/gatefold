@@ -147,15 +147,15 @@ export default function (M) {
 
     test('a file from a newer major is refused, and says so usefully', () => {
         A.reset();
-        const res = A.fromProjectData({ type: 'gatefold', version: '2.0', elements: [] });
+        const res = A.fromProjectData({ type: 'gatefold', version: '3.0', elements: [] });
         ok(res.error, 'refused');
-        ok(/2\.0/.test(res.error) && /1\.x/.test(res.error),
+        ok(/3\.0/.test(res.error) && /2\.x/.test(res.error),
             'naming both the file version and what this build reads');
     });
 
     test('a newer MINOR still opens', () => {
         A.reset();
-        ok(!A.fromProjectData({ type: 'gatefold', version: '1.7', elements: [] }).error,
+        ok(!A.fromProjectData({ type: 'gatefold', version: '2.7', elements: [] }).error,
             'a minor bump is readable by design');
     });
 
@@ -264,5 +264,91 @@ export default function (M) {
     test('the extension and the large-file threshold are named, not inlined', () => {
         eq(A.EXT, 'gatefold', 'extension');
         ok(A.LARGE_FILE_BYTES > 1e6, 'and a size worth warning about');
+    });
+
+    /* ── print formats in the file ── */
+
+    /* The bump is not about a shape change — there isn't one — it is so a
+       shipped 1.x REFUSES a J-card instead of painting a 101-pixel canvas
+       with every element off it and saying nothing. */
+    test('the format is 2.0, and a 1.0 file still opens with no migration at all', () => {
+        eq(A.FORMAT_VERSION, '2.0', 'print formats bumped the major');
+        A.reset();
+        const res = A.fromProjectData({
+            type: 'gatefold', version: '1.0', name: 'old', bgColor: '#123456',
+            size: { unit: 'px', trim: { w: 2048, h: 2048 }, bleed: 0, safe: 0 },
+            elements: [M.element.create('rect', { x: 5, y: 6 })],
+        });
+        ok(!res.error, 'opened');
+        eq(res.doc.name, 'old', 'name intact');
+        eq(res.doc.bgColor, '#123456', 'colour intact');
+        eq(res.doc.size.trim.w, 2048, 'and the size it was saved at');
+        eq(res.doc.elements.length, 1, 'with its element');
+    });
+
+    test('a J-card round-trips through the file, panels and all', () => {
+        A.reset();
+        A.get().size = M.formats.sizeOf('jcard-jp2');
+        A.get().elements.push(M.element.create('text', { x: 10, y: 20, text: 'SIDE A' }));
+        const res = A.parse(A.stringify());
+        ok(!res.error, 'reopened');
+        eq(M.formats.matchId(res.doc.size), 'jcard-jp2', 'and it is still a JP2');
+        eq(res.doc.size.unit, 'mm', 'still millimetres');
+        eq(res.doc.size.dpi, 300, 'still at print resolution');
+        eq(res.doc.size.panelAxis, 'y', 'still stacking');
+        eq(res.doc.size.panels.length, 5, 'with all five panels');
+        eq(res.doc.size.panels.map((p) => p.name), ['FRONT', 'SPINE', 'BACK', 'FLAP 1', 'FLAP 2'],
+            'named, and in order');
+    });
+
+    /* MERGE OVER A FULL DEFAULT, one level down. A file that names a trim box
+       and omits the rest must leave the defaults standing rather than leave
+       holes — the new sub-fields get the same treatment as the old ones by
+       construction, which is why none of this needed a migration. */
+    test('a print size that omits fields keeps the defaults, not undefined', () => {
+        A.reset();
+        const res = A.fromProjectData({
+            type: 'gatefold', version: '2.0',
+            size: { unit: 'mm', trim: { w: 120, h: 120 }, panelAxis: 'x', panels: [{ name: 'A', len: 120 }] },
+            elements: [],
+        });
+        ok(!res.error, 'opened');
+        eq(res.doc.size.bleed, 0, 'the default bleed stands rather than becoming undefined');
+        eq(res.doc.size.safe, 0, 'and the default safe margin');
+        eq(M.formats.metrics(res.doc.size).dpi, 300, 'and a missing dpi falls back at the boundary');
+        eq(res.doc.size.panels.length, 1, 'while the fields it DID name ride in');
+    });
+
+    /* The old clamp used canvasSize, which on a J-card is 101.6 — every piece
+       of text in the file would have been clamped to a hundredth of the card,
+       and the repair would have been worse than the damage. */
+    test('a runaway font size is clamped to the CARD, not to its width in millimetres', () => {
+        A.reset();
+        const res = A.fromProjectData({
+            type: 'gatefold', version: '2.0',
+            size: M.formats.sizeOf('jcard-jp0'),
+            elements: [{ id: 1, type: 'text', text: 'X', font: 'Press Start 2P', fontSize: 40000 }],
+        });
+        eq(res.doc.elements[0].fontSize, 1237, 'the trim, floored');
+        ok(res.doc.elements[0].fontSize > 1000, 'and nowhere near 101');
+    });
+
+    /* Object.assign can add a key and cannot remove one, so anything that
+       PATCHED doc.size would leave panels behind and the square would draw
+       fold lines it does not have. */
+    test('switching a J-card back to a square leaves nothing of the J-card behind', () => {
+        A.reset();
+        A.get().size = M.formats.sizeOf('jcard-jp0');
+        A.get().size = A.squareSize(512);
+        ok(!('panels' in A.get().size), 'no panels survive');
+        ok(!('panelAxis' in A.get().size), 'nor an axis');
+        ok(!('dpi' in A.get().size), 'nor a dpi');
+        eq(M.panels.lines(M.formats.metrics(A.get().size)).filter((l) => l.kind === 'fold').length, 0,
+            'and so the square draws no folds');
+    });
+
+    test('the default document is untouched by any of this', () => {
+        eq(M.formats.metrics(A.emptyDoc().size).surface, { w: 1024, h: 1024 },
+            'still a 1024 square, and the surface is still the trim');
     });
 }

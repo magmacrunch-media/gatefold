@@ -23,10 +23,16 @@
     const App = (window.Gatefold = window.Gatefold || {});
 
     /**
-     * Snap a moving element's bounds to the canvas centre.
+     * Snap a moving element's bounds to the centre of an arbitrary box.
+     *
+     * The general case snapToCentre was always a special case of. A J-card
+     * wants a title centred on the FRONT PANEL rather than on the whole
+     * strip, and that is this same arithmetic against a box that does not
+     * start at the origin. core/panels.js picks the box; this does the sums,
+     * so there is one centre-snap in the codebase rather than two.
      *
      * @param b          the element's bounds, as core/geometry.js returns them
-     * @param canvasPx   the canvas dimension in document units
+     * @param box        {x, y, w, h} in document units
      * @param tolerance  how close, in document units, counts as aligned
      * @returns {{dx: number, dy: number, lines: Array<{axis: string, at: number}>}}
      *          the offset to add to the element's position, and the lines to
@@ -34,31 +40,46 @@
      *
      * ROTATION NEEDS NOTHING EXTRA. bounds() is the element's box in its own
      * unrotated frame, and render.js turns the element about the centre of
-     * exactly that box — so putting the bounds centre on the canvas centre
+     * exactly that box — so putting the bounds centre on the box centre
      * centres the rotated element too, at any angle.
      */
-    function snapToCentre(b, canvasPx, tolerance) {
+    function snapToBox(b, box, tolerance) {
         const out = { dx: 0, dy: 0, lines: [] };
-        if (!b || !(canvasPx > 0) || !(tolerance > 0)) return out;
+        if (!b || !box || !(box.w > 0) || !(box.h > 0) || !(tolerance > 0)) return out;
 
-        const centre = canvasPx / 2;
-
+        const centreX = box.x + box.w / 2;
         const cx = b.x + b.w / 2;
-        if (Math.abs(cx - centre) <= tolerance) {
-            out.dx = centre - cx;
-            out.lines.push({ axis: 'x', at: centre });
+        if (Math.abs(cx - centreX) <= tolerance) {
+            out.dx = centreX - cx;
+            out.lines.push({ axis: 'x', at: centreX });
         }
 
+        const centreY = box.y + box.h / 2;
         const cy = b.y + b.h / 2;
-        if (Math.abs(cy - centre) <= tolerance) {
-            out.dy = centre - cy;
-            out.lines.push({ axis: 'y', at: centre });
+        if (Math.abs(cy - centreY) <= tolerance) {
+            out.dy = centreY - cy;
+            out.lines.push({ axis: 'y', at: centreY });
         }
 
         return out;
     }
 
+    /**
+     * Snap to the centre of a square canvas.
+     *
+     * The whole of what a square cover needs, and still the shape ui/tools.js
+     * reaches for through core/panels.js when a document has no panels. The
+     * canvasPx guard is not redundant with snapToBox's: it is what keeps a
+     * zero size returning nothing rather than being handed on as a
+     * zero-width box.
+     */
+    function snapToCentre(b, canvasPx, tolerance) {
+        if (!(canvasPx > 0)) return { dx: 0, dy: 0, lines: [] };
+        return snapToBox(b, { x: 0, y: 0, w: canvasPx, h: canvasPx }, tolerance);
+    }
+
     App.guides = {
+        snapToBox: snapToBox,
         snapToCentre: snapToCentre,
     };
 }());

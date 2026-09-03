@@ -33,6 +33,11 @@
        preview: they belong to a gesture, not to the document, so they are
        held here and never reach history, the stats or an export. */
     let guides = [];
+    /* On by default: a print format whose folds are invisible is a strip of
+       artwork with no way to tell where the card bends. A square document has
+       no folds and no safe margin, so core/panels.js returns nothing for it
+       and this costs it nothing. */
+    let panelLines = true;
 
     const doc = () => App.gatefold.get();
 
@@ -50,6 +55,17 @@
                    Drop it rather than leave it dangling. */
                 if (selectedId != null && !doc().elements.some((el) => el.id === selectedId)) {
                     selectedId = null;
+                }
+                /* THE SIZE IS PART OF THE SNAPSHOT AND THE BACKING STORE IS
+                   NOT, so restoring alone repaints the old document into the
+                   new canvas: undo a 1024 -> 4096 and the cover draws in the
+                   top-left quarter. It read as a zoom glitch while every size
+                   was a square; undoing into a J-card would be unmissable.
+                   The dropdown is resynced for the same reason — the label
+                   has to agree with what is actually open. */
+                if (App.sizes) {
+                    App.sizes.applyToCanvas();
+                    App.sizes.syncControls();
                 }
                 render();
             },
@@ -149,14 +165,30 @@
     function paint() {
         const ctx = App.canvas.context();
         if (!ctx) return;
+        const m = App.formats.metrics(doc().size);
         App.render.render(ctx, doc(), {
             selectedId: selectedId,
             preview: preview,
             guides: guides,
+            /* The folds and the safe margin. Passed HERE and not by
+               ui/export.js, which is the whole of what makes them
+               non-printing — the same mechanism that already keeps the drag
+               guides and the selection chrome out of the exported file. */
+            panels: panelLines ? App.panels.lines(m) : null,
             measure: App.canvas.measure,
-            width: App.canvas.size(),
+            metrics: m,
+            width: App.canvas.width(),
+            height: App.canvas.height(),
         });
     }
+
+    /** Show or hide the fold and safe-margin overlay. */
+    function setPanelLines(on) {
+        panelLines = !!on;
+        App.canvas.schedule();
+    }
+
+    function panelLinesOn() { return panelLines; }
 
     /** Show an element that is not in the document yet; null clears it. */
     function setPreview(el) {
@@ -186,10 +218,24 @@
         const n = doc().elements.length;
         const sizeStat = document.getElementById('canvasSizeStat');
         const countStat = document.getElementById('elementCountStat');
-        const px = App.gatefold.canvasSize(doc().size);
-        if (sizeStat) sizeStat.textContent = `${px}×${px}`;
+        if (sizeStat) {
+            /* THE TRIM, NOT THE SURFACE. The finished card is what a person
+               means by "how big is this"; the bleed is packaging, and
+               reporting 1275×1313 for a 4-inch card would be a number nobody
+               asked for and nobody can check against a ruler. */
+            const size = doc().size;
+            const m = App.formats.metrics(size);
+            sizeStat.textContent = m.unit === 'mm'
+                ? `${round1(size.trim.w)}×${round1(size.trim.h)}MM ${m.dpi}DPI`
+                : `${m.trim.w}×${m.trim.h}`;
+        }
         if (countStat) countStat.textContent = `${n} ELEMENT${n === 1 ? '' : 'S'}`;
     }
+
+    /* Millimetres are sixteenths of an inch scaled by 25.4 and do not come out
+       round; 104.775 in a status bar is noise, and 104.8 is the number on the
+       printer's template. */
+    function round1(mm) { return Math.round(mm * 10) / 10; }
 
     /* ── document edits ─────────────────────────────────── */
 
@@ -375,6 +421,8 @@
         render: render,
         setPreview: setPreview,
         setGuides: setGuides,
+        setPanelLines: setPanelLines,
+        panelLinesOn: panelLinesOn,
 
         add: add,
         remove: remove,

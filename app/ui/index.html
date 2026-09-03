@@ -89,6 +89,8 @@
                     <div class="menu-drop" role="menu">
                         <button data-action="view:layers" data-toggles="layersToggle">Layers<i>F7</i></button>
                         <button data-action="view:reference" data-toggles="refToggle">Reference Panel</button>
+                        <hr>
+                        <button data-action="view:print-guides" title="Fold lines and the safe margin. Never exported.">Fold &amp; Safe Guides</button>
                     </div>
                 </div>
                 <div class="menu">
@@ -141,12 +143,11 @@
                                 <span>1024</span>
                                 <span class="dropdown-arrow">&#9662;</span>
                             </div>
-                            <div class="dropdown-options">
-                                <div class="dropdown-option" data-value="512">512</div>
-                                <div class="dropdown-option active" data-value="1024">1024</div>
-                                <div class="dropdown-option" data-value="2048">2048</div>
-                                <div class="dropdown-option" data-value="4096">4096</div>
-                            </div>
+                            <!-- SQUARE and CASSETTE, written by ui/sizes.js from
+                                 core/formats.js. Typed out here they were a
+                                 second list that could disagree with the one
+                                 in core/, and did. -->
+                            <div class="dropdown-options"></div>
                         </div>
                     </div>
                     <div class="canvas-bg-item">
@@ -661,9 +662,11 @@
     <script src="../core/waves.js"></script>
     <script src="../core/geometry.js"></script>
     <script src="../core/guides.js"></script>
+    <script src="../core/panels.js"></script>
     <script src="../core/clipart.js"></script>
     <script src="../core/keybindings.js"></script>
     <script src="../core/artstore.js"></script>
+    <script src="../core/formats.js"></script>
     <script src="../core/gatefold.js"></script>
     <script src="platform.js"></script>
     <script src="canvas.js"></script>
@@ -683,6 +686,7 @@
     <script src="help-ui.js"></script>
     <script src="menu.js"></script>
     <script src="session.js"></script>
+    <script src="sizes.js"></script>
     <script src="main.js"></script>
 </body>
 </html>

@@ -606,6 +606,24 @@ kbd {
     gap: 4px;
 }
 
+/* A heading inside an option list — SQUARE, CASSETTE — written by
+   ui/sizes.js. It is deliberately NOT a .dropdown-option: shell/dropdown.js
+   only ever queries that class, so a heading is unclickable by construction
+   rather than by being told to be. The shell file is vendored, which is why
+   this rule lives here. */
+.dropdown-group {
+    padding: 7px 10px 3px;
+    font-size: 6px;
+    color: var(--dim);
+    letter-spacing: 0.18em;
+    pointer-events: none;
+}
+
+.dropdown-group:not(:first-child) {
+    border-top: 1px solid var(--line, rgba(255, 255, 255, 0.12));
+    margin-top: 3px;
+}
+
 .prop-label {
     font-size: 8px;
     color: var(--dim);

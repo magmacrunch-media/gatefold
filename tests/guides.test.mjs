@@ -83,4 +83,36 @@ export default function (M) {
             'zero is treated as off rather than as "must be perfect" — the caller'
             + ' asking for no tolerance is asking for no snapping');
     });
+
+    /* ── the general case ──
+       A J-card wants a title centred on the FRONT PANEL rather than on the
+       whole strip, and core/panels.js gets that by handing this the panel's
+       box. snapToCentre is now a delegation to it, and this is what stops the
+       two drifting into being two copies of the same arithmetic. */
+
+    test('snapToCentre is snapToBox over the canvas, not a second copy of it', () => {
+        for (const b of [boxAt(MID, MID), boxAt(MID + 3, MID - 2), boxAt(MID + 40, MID + 40),
+            boxAt(MID + 2, 200), boxAt(MID + 4, MID + 5)]) {
+            eq(JSON.stringify(G.snapToCentre(b, PX, 4)),
+                JSON.stringify(G.snapToBox(b, { x: 0, y: 0, w: PX, h: PX }, 4)),
+                `same answer for a box at ${b.x},${b.y}`);
+        }
+    });
+
+    test('an off-origin box snaps to ITS centre, not to the canvas one', () => {
+        const box = { x: 200, y: 600, w: 400, h: 200 };
+        const s = G.snapToBox(boxAt(400, 700), box, 4);
+        eq(s.dx, 0, 'already on the box centre horizontally');
+        eq(s.dy, 0, 'and vertically');
+        eq(s.lines.map((l) => l.at), [400, 700], 'the lines are drawn through the box');
+        eq(G.snapToBox(boxAt(MID, MID), box, 4).lines.length, 0,
+            'and the canvas centre is nowhere near it');
+    });
+
+    test('a box with no area is a no-op', () => {
+        for (const box of [null, { x: 0, y: 0, w: 0, h: 100 }, { x: 0, y: 0, w: 100, h: 0 }]) {
+            const s = G.snapToBox(boxAt(MID, MID), box, 4);
+            eq(s.lines.length, 0, `no lines for ${JSON.stringify(box)}`);
+        }
+    });
 }
