@@ -31,6 +31,11 @@
 
         'file:import': () => App.import.fromDialog(),
         'file:export': () => App.export.exportPNG(),
+        /* A setting, not a command: it changes what the NEXT export writes.
+           It sits in File beside Export rather than in View because it is a
+           property of the file, not of what is on screen — the marks are
+           never drawn in the editor. */
+        'file:print-marks': () => App.export.setMarks(!App.export.marksOn()),
 
         'edit:undo': () => App.session.undo(),
         'edit:redo': () => App.session.redo(),
@@ -38,6 +43,13 @@
         'edit:paste': () => App.session.pasteInternal(),
         'edit:delete': () => App.session.remove(),
         'edit:clear': () => document.getElementById('clearBtn').click(),
+        /* Both were in the markup from the day the lock shipped and in
+           NEITHER map here, so the two Edit items opened, highlighted and did
+           nothing while Ctrl+L worked — ui/session.js owns the keyboard's
+           action map and this one is separate. Same functions, as every entry
+           in this file is. */
+        'edit:lock': () => App.session.toggleLock(),
+        'edit:unlock-all': () => App.session.unlockAll(),
 
         // Proxied by the kit's data-toggles rule; no entry needed for the
         // check mark, only for the click.
@@ -59,8 +71,20 @@
             case 'edit:undo': return { disabled: !App.session.canUndo() };
             case 'edit:redo': return { disabled: !App.session.canRedo() };
             case 'edit:copy':
-            case 'edit:delete': return { disabled: !App.session.selectedElement() };
+            case 'edit:delete':
+            case 'edit:lock': return { disabled: !App.session.selectedElement() };
+            /* NOT disabled when nothing is locked. It is the only way back to
+               an element that hit testing skips, so it answers even when the
+               answer is "nothing was" — which it says in a toast. */
             case 'edit:paste': return { disabled: !App.session.hasClipboard() };
+            /* Dead without a bleed. A square cover is not cut out of a larger
+               sheet, so there is no trim to mark and nowhere to put a mark —
+               ticking this on would grow the export by nothing and add
+               nothing to it. */
+            case 'file:print-marks': return {
+                checked: App.export.marksOn(),
+                disabled: !App.marks.wanted(App.formats.metrics(App.gatefold.get().size)),
+            };
             /* Dead on a square cover, which has no folds and no safe margin
                to show — the item would tick on and change nothing. */
             case 'view:print-guides': return {

@@ -193,6 +193,26 @@ measured in pixels should. `pHYs` is quantised to whole pixels per metre, so
 precision, not a defect, and `tests/pngmeta.test.mjs` compares with a
 tolerance sized to it.
 
+**CROP AND FOLD MARKS ARE OPT-IN, AND THAT IS NOT TIMIDITY.** They cannot go
+in the bleed — the bleed is artwork the knife takes away, so a mark there is
+printed over the photograph AND thrown away by the cut it was meant to guide.
+So marks need paper outside the bleed, and a marked export is a BIGGER IMAGE:
+`core/marks.js` puts the surface on a sheet with a margin of one and a half
+bleeds all round, which for a JP0 is 1387 x 1425 rather than 1275 x 1313. The
+card inside it does not change. Every print export so far has been exactly
+`m.surface`, and quietly returning different dimensions would break anyone who
+had measured one, which is why it is a File-menu toggle remembered in
+`gatefold.export` rather than a new default.
+
+Everything in `marks.js` is in units of the bleed, so a format declaring 3mm
+gets marks in proportion without a second table of print dimensions beside
+`formats.js`'s. The margin is **rounded to whole dots** because it is where
+`export.js` draws the composed artwork into the sheet, and `drawImage` at a
+fractional offset resamples every pixel — a 300dpi card would arrive slightly
+soft with nothing on screen to show for it. Crop marks are solid and fold
+marks dashed, which is the printing convention and deliberately NOT the screen
+overlay's, where the solid line IS the fold.
+
 **THE OVERLAY IS NON-PRINTING, AND THAT INCLUDES THE PANEL NAMES.** `FRONT`,
 `SPINE`, `BACK` and `FLAP n` are a fourth `kind` out of `panels.lines()`, sat
 in the margin band between each panel's leading edge and its safe line. Like

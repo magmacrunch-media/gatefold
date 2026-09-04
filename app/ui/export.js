@@ -22,6 +22,11 @@
 //      and the card places at four times its size. core/pngmeta.js writes it
 //      in; encode() below is the only place that happens, for both builds.
 //
+// Printer's marks are the one thing here that is OPT-IN. They need paper
+// outside the bleed, so a marked export is a bigger image than an unmarked
+// one — see core/marks.js — and changing what m.surface produces without
+// being asked is not a favour.
+//
 // The desktop/web fork is sprite-forge's saveSheet shape: a native Save dialog
 // when there is a filesystem, an <a download> when there is not.
 
@@ -29,6 +34,24 @@
     'use strict';
 
     const App = (window.Gatefold = window.Gatefold || {});
+
+    /* Whether to add printer's marks, remembered across sessions. OFF by
+       default and opt-in on purpose: marks need paper outside the bleed, so a
+       marked export is a BIGGER IMAGE than an unmarked one. Every print export
+       so far has been exactly m.surface, and quietly handing back different
+       dimensions would break anyone who had measured one. */
+    const prefs = window.MagmaKit.prefs.create('gatefold.export');
+
+    let marks = !!((prefs.read() || {}).marks);
+
+    function marksOn() { return marks; }
+
+    function setMarks(on) {
+        marks = !!on;
+        prefs.patch({ marks: marks });
+        if (window.Toast) Toast.show(marks ? 'CROP MARKS ON' : 'CROP MARKS OFF');
+        return marks;
+    }
 
     /** Every distinct face the document actually draws with. */
     function fontsInUse(doc) {
@@ -80,6 +103,38 @@
     }
 
     /**
+     * The artwork, on a sheet with room for printer's marks around it.
+     *
+     * Returns compose()'s own canvas untouched whenever there are no marks to
+     * add — the toggle is off, or the document has no bleed and therefore no
+     * cut to mark. THE UNMARKED FILE IS BYTE FOR BYTE WHAT IT ALWAYS WAS; this
+     * function either wraps it or gets out of the way.
+     *
+     * The margin is filled white rather than left transparent because it is
+     * PAPER. Beyond the bleed nothing is printed, and a transparent slug
+     * composites into whatever happens to be behind it — including black,
+     * which would hide every mark on the sheet.
+     */
+    function composeSheet(doc) {
+        const art = compose(doc);
+        const m = App.formats.metrics(doc.size);
+        if (!marks || !App.marks.wanted(m)) return art;
+
+        const s = App.marks.sheet(m);
+        const c = document.createElement('canvas');
+        c.width = s.w;
+        c.height = s.h;
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, s.w, s.h);
+        // An integer offset, so this is a copy and not a resample. See
+        // core/marks.js's margin().
+        ctx.drawImage(art, s.offset.x, s.offset.y);
+        App.render.printMarks(ctx, App.marks.lines(m), App.marks.weight(m));
+        return c;
+    }
+
+    /**
      * The finished file's bytes: the composed canvas, with its physical size
      * written into it.
      *
@@ -126,7 +181,7 @@
             if (window.Toast) Toast.show('SOME ASSETS DID NOT LOAD — EXPORTING ANYWAY');
         }
 
-        const canvas = compose(doc);
+        const canvas = composeSheet(doc);
 
         if (!App.fs) {
             // LITE: the browser's own download. There is no Save dialog and
@@ -168,7 +223,10 @@
     App.export = {
         exportPNG: exportPNG,
         compose: compose,
+        composeSheet: composeSheet,
         encode: encode,
+        marksOn: marksOn,
+        setMarks: setMarks,
         fontsInUse: fontsInUse,
         filename: filename,
     };

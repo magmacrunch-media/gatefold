@@ -196,6 +196,20 @@ export default function (M) {
             'and the picker is still bound, wherever that call now lives');
     });
 
+    /* The menu is the one surface where a dead control is completely
+       invisible: an item with no handler opens, highlights, closes, and does
+       nothing. kit/menu.js looks the action up in the map it was given and
+       returns quietly when there is no entry, which is correct of it and
+       silent by construction. */
+    test('every menu item in the markup has an action to dispatch', () => {
+        const menu = readFileSync(join(UI, 'menu.js'), 'utf8');
+        const actions = [...html.matchAll(/data-action="([^"]+)"/g)].map((m) => m[1]);
+        ok(actions.length > 12, `found ${actions.length} menu items`);
+
+        const orphans = [...new Set(actions)].filter((a) => !menu.includes(`'${a}'`));
+        eq(orphans, [], 'items the actions map does not name');
+    });
+
     /* The overlay has no control to proxy, so unlike every other View item it
        cannot fall back to data-toggles for its check mark. */
     test('the print-guides View item is dispatched and reports its own state', () => {

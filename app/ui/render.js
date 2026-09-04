@@ -37,6 +37,12 @@
        card can be cut at a fold, which is the one mistake this overlay exists
        to prevent. All three are non-printing: only ui/session.js asks for
        them, and ui/export.js does not. */
+    /* PRINTER'S MARKS ARE BLACK, and they are the only thing this file draws
+       that is not chrome: they are printed, they are read by a person with a
+       guillotine, and rose hairlines are not what that person is looking for.
+       Nothing about them is themed. */
+    const MARK = '#000000';
+
     const FOLD = GUIDE;
     const SAFE = 'rgba(255, 61, 110, 0.45)';
     const TRIM = 'rgba(160, 160, 176, 0.7)';
@@ -481,6 +487,43 @@
         ctx.restore();
     }
 
+    /**
+     * Crop and fold marks, in SHEET coordinates.
+     *
+     * NOT PART OF render(). Everything else here draws in document
+     * coordinates, inside the translate that puts the trim's top-left at the
+     * origin; marks live outside the bleed on a canvas that is bigger than the
+     * document, so they are drawn by ui/export.js after the artwork has been
+     * placed, against an untranslated context.
+     *
+     * Crop solid, fold dashed — the printing convention, and deliberately NOT
+     * the one drawPanelLines uses on screen, where the fold is the solid line
+     * and the dash means "safe margin". On screen the question is where the
+     * card bends; on paper it is which of two instructions a mark is, and cut
+     * and fold are not interchangeable.
+     */
+    function printMarks(ctx, marks, weight) {
+        if (!marks || !marks.length) return;
+        const lw = Math.max(1, weight || 1);
+        ctx.save();
+        ctx.strokeStyle = MARK;
+        ctx.lineWidth = lw;
+        // Butt caps: a round or square cap would overhang the end of the mark
+        // by half its width, which is the half-millimetre a cut is out by.
+        ctx.lineCap = 'butt';
+        for (const kind of ['crop', 'fold']) {
+            ctx.setLineDash(kind === 'fold' ? [lw * 3, lw * 3] : []);
+            ctx.beginPath();
+            for (const k of marks) {
+                if (k.kind !== kind) continue;
+                ctx.moveTo(k.x1, k.y1);
+                ctx.lineTo(k.x2, k.y2);
+            }
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+
     /* ── the frame ──────────────────────────────────────── */
 
     /**
@@ -552,6 +595,7 @@
         drawSelection: drawSelection,
         drawGuides: drawGuides,
         drawPanelLines: drawPanelLines,
+        printMarks: printMarks,
         applyRotation: applyRotation,
         DRAW: DRAW,
     };
