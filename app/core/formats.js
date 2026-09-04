@@ -263,6 +263,10 @@
      *   group  the heading the picker files it under.
      *   label  what the picker shows. Short on purpose: the option list is
      *          7px Press Start 2P in a narrow column and does not wrap.
+     *   note   what the label does not say. JP3, 4PP and TRAY are trade
+     *          names, and a picker that assumes you know them is a picker for
+     *          whoever wrote it. ui/sizes.js hangs this off each option as a
+     *          title, which is the only room there is for a sentence.
      *   tier   'full' for anything that is not a square in pixels. LITE keeps
      *          exactly the four sizes live on magmacrunch.com today, and
      *          core/tier.js's `sizes` capability is the gate — this is its
@@ -277,6 +281,7 @@
                 id: 'square-' + px,
                 group: 'SQUARE',
                 label: String(px),
+                note: px + ' x ' + px + ' pixels — a square cover, for a screen',
                 tier: 'lite',
                 size: function () { return squareSize(px); },
             };
@@ -290,6 +295,10 @@
                 id: 'jcard-jp' + extra,
                 group: 'CASSETTE',
                 label: 'JP' + extra,
+                note: extra === 0
+                    ? 'Cassette J-card: front, spine and back flap. 4 x 4 1/8 in'
+                    : 'Cassette J-card plus ' + extra + ' extra '
+                        + (extra === 1 ? 'flap' : 'flaps') + ', folding inside the case',
                 tier: 'full',
                 size: function () { return jcardSize(extra); },
             };
@@ -298,13 +307,28 @@
            heading whenever the group changes as it walks this list, so a
            split group would print its heading twice. */
         [
-            { id: 'cd-front', label: 'FRONT', size: cdPageSize },
-            { id: 'cd-spread', label: '4PP', size: cdSpreadSize },
-            { id: 'cd-tray', label: 'TRAY', size: cdTraySize },
+            {
+                id: 'cd-front', label: 'FRONT', size: cdPageSize,
+                note: 'One CD booklet page — the insert behind the front of the case',
+            },
+            {
+                id: 'cd-spread', label: '4PP', size: cdSpreadSize,
+                note: 'A 4-page CD booklet laid flat: two pages and the fold between them',
+            },
+            {
+                id: 'cd-tray', label: 'TRAY', size: cdTraySize,
+                note: 'CD tray card — the back cover, with a spine at each end',
+            },
         ].map(function (e) {
-            return { id: e.id, group: 'CD', label: e.label, tier: 'full', size: e.size };
+            return {
+                id: e.id, group: 'CD', label: e.label, note: e.note,
+                tier: 'full', size: e.size,
+            };
         }),
-        [{ id: 'lp-12', group: 'VINYL', label: '12IN', tier: 'full', size: lpJacketSize }]
+        [{
+            id: 'lp-12', group: 'VINYL', label: '12IN', tier: 'full', size: lpJacketSize,
+            note: 'One face of a 12-inch record jacket, front or back. 12 3/8 in square',
+        }]
     );
 
     function byId(id) {

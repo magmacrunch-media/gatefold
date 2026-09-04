@@ -32,6 +32,17 @@
         });
     }
 
+    /* These strings are ours, not a document's, but they are going into an
+       attribute by concatenation and one stray quote would end it early and
+       silently — the option would keep working and lose its tooltip. */
+    function esc(s) {
+        return String(s)
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+
     function populate() {
         const list = document.querySelector('#' + ID + ' .dropdown-options');
         if (!list) return;
@@ -45,7 +56,12 @@
                    than by being told to be. */
                 html += '<div class="dropdown-group">' + group + '</div>';
             }
-            html += '<div class="dropdown-option" data-value="' + f.id + '">' + f.label + '</div>';
+            /* The note is a title rather than a second line: the list is
+               already taller than the panel it hangs in, and every option
+               that grew would push another format out of sight. */
+            html += '<div class="dropdown-option" data-value="' + f.id + '"'
+                + (f.note ? ' title="' + esc(f.note) + '"' : '')
+                + '>' + f.label + '</div>';
         }
         list.innerHTML = html;
     }

@@ -611,6 +611,35 @@ kbd {
    only ever queries that class, so a heading is unclickable by construction
    rather than by being told to be. The shell file is vendored, which is why
    this rule lives here. */
+/* THE SIZE PICKER OUTGREW THE SHELL'S LIST. ware/shell/dropdown.css caps an
+   open list at 240px, which was room for ten options when this picker had
+   ten. It now has fourteen under four headings — about 410px of rows — so the
+   CD and VINYL groups sat below the fold behind a 4px scrollbar with a
+   transparent track, and the visible part of the list was identical to the
+   version before they existed. A format nobody can find is a format that is
+   not there.
+
+   Scoped to this one dropdown by id: the shape and font pickers are short and
+   the shell's default is right for them. Capped against the VIEWPORT as well,
+   because .panel scrolls and an absolutely-positioned list is clipped by it —
+   a short window must cut the list rather than have it vanish. */
+.custom-dropdown#canvasSizeDropdown.open .dropdown-options {
+    max-height: min(460px, calc(100vh - 220px));
+}
+
+/* A VISIBLE SCROLLBAR WHEN IT DOES SCROLL. The shell gives every list a 4px
+   bar on a transparent track, which on a short window is the only thing
+   saying there are more formats below - and it is nearly invisible. If
+   this list has to scroll, it should look like it scrolls. */
+#canvasSizeDropdown .dropdown-options::-webkit-scrollbar { width: 8px; }
+#canvasSizeDropdown .dropdown-options::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.06);
+}
+#canvasSizeDropdown .dropdown-options::-webkit-scrollbar-thumb {
+    background: var(--dd-accent, #ff3d6e);
+    border-radius: 4px;
+}
+
 .dropdown-group {
     padding: 7px 10px 3px;
     font-size: 6px;
