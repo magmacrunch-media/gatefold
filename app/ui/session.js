@@ -75,6 +75,7 @@
 
     /** Record the state BEFORE a mutation. */
     function pushUndo() {
+        flushNudge();
         if (history) history.push();
         refreshDirty();
     }
@@ -102,14 +103,16 @@
         if (history) history.cancelStroke();
     }
 
-    function undo() { if (history && history.undo()) refreshDirty(); }
-    function redo() { if (history && history.redo()) refreshDirty(); }
+    function undo() { flushNudge(); if (history && history.undo()) refreshDirty(); }
+    function redo() { flushNudge(); if (history && history.redo()) refreshDirty(); }
     function canUndo() { return !!history && history.canUndo(); }
     function canRedo() { return !!history && history.canRedo(); }
 
     /** A freshly opened file is not a modified one, and its undo stack must
         not reach back into the document that was open before it. */
     function resetHistory() {
+        clearTimeout(nudgeTimer);
+        nudgeTimer = null;
         if (history) history.clear();
         selectedId = null;
         markSaved();
@@ -316,6 +319,20 @@
         // Locked means fixed in place, and the arrow keys are a way to move
         // something that does not go through hit testing at all.
         if (!el || el.locked === true) return;
+        /* THE SNAPSHOT IS TAKEN BEFORE THE MOVE. beginStroke is idempotent,
+           so a held arrow key captures the pre-run position exactly once and
+           the debounce below commits it.
+
+           This used to call pushUndo() from the timer instead, which is the
+           one thing history.push() must never be handed: its contract is that
+           the state given to it is the PRE-mutation one, and no argument means
+           "snapshot now". Firing it 300ms after the element had already moved
+           recorded where it had been nudged TO, so Ctrl+Z restored the
+           position it was already in and the position before the run was
+           never captured at all. Every other mutation in this file pushes
+           first and mutates second; the debounce is what hid that this one
+           did not. */
+        beginStroke();
         el.x += dx;
         el.y += dy;
         App.canvas.schedule();
@@ -323,8 +340,20 @@
            a second is a single intention, not thirty of them. */
         clearTimeout(nudgeTimer);
         nudgeTimer = setTimeout(function () {
-            pushUndo();
+            nudgeTimer = null;
+            commitStroke();
         }, App.keybindings.NUDGE_DEBOUNCE_MS);
+    }
+
+    /* Close an open nudge run NOW. Anything that records its own entry or
+       walks the stack has to land AFTER the nudge's, never on top of a stroke
+       still waiting on the debounce — the entry would then commit above work
+       that came later than the state it holds. */
+    function flushNudge() {
+        if (nudgeTimer === null) return;
+        clearTimeout(nudgeTimer);
+        nudgeTimer = null;
+        commitStroke();
     }
 
     /* ── the clipboard ──────────────────────────────────── */

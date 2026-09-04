@@ -194,4 +194,39 @@ export default function (M) {
         near(along[1], FRONT_END - 37.5, 'and above the first fold');
         near(along[5], STRIP - 37.5, 'up to the bottom cut');
     });
+
+    /* ── labels ── */
+
+    test('every panel is named, in stacking order', () => {
+        const labels = P.lines(JP0).filter((x) => x.kind === 'label');
+        eq(labels.map((l) => l.name), ['FRONT', 'SPINE', 'BACK'], 'the three panels');
+
+        const jp5 = P.lines(F.metrics(F.sizeOf('jcard-jp5'))).filter((x) => x.kind === 'label');
+        eq(jp5.map((l) => l.name),
+            ['FRONT', 'SPINE', 'BACK', 'FLAP 1', 'FLAP 2', 'FLAP 3', 'FLAP 4', 'FLAP 5'],
+            'and all eight of a JP5 — the case the labels exist for');
+    });
+
+    /* The band between a panel's leading edge and its safe line: the strip a
+       printer's template already reserves. Anywhere else is over artwork. */
+    test('a name sits in the panel margin, not in the panel', () => {
+        const labels = P.lines(JP0).filter((x) => x.kind === 'label');
+        const boxes = P.boxes(JP0);
+        eq(labels.length, boxes.length, 'one label per panel');
+
+        for (const l of labels) eq(l.x, 37.5, `${l.name} is inset from the left cut`);
+
+        labels.forEach(function (l, i) {
+            const top = boxes[i].y;
+            ok(l.y > top && l.y < top + 37.5,
+                `${l.name} at ${l.y} is inside its own margin band ${top}..${top + 37.5}`);
+        });
+    });
+
+    /* boxes() calls the whole trim PAGE so the rest of this file needs no
+       branch for a square. That is a convenience for the code, not a fact
+       about the document, and it must not reach the canvas. */
+    test('a square cover is not labelled PAGE', () => {
+        eq(P.lines(SQUARE).filter((x) => x.kind === 'label').length, 0, 'nothing to name');
+    });
 }

@@ -174,6 +174,34 @@ licences; see that directory's README before adding one. Self-hosting is only
 half of it: `ui/canvas.js` waits on `document.fonts.ready` and `ui/export.js`
 awaits `document.fonts.load()` per face before compositing.
 
+## Print output
+
+**THE EXPORTED FILE HAS TO SAY HOW BIG IT IS.** `ui/export.js` composes at
+`m.surface`, so a JP0 J-card is already the right 1275 x 1313 dots — but a
+canvas encodes to PNG with no `pHYs` chunk, and a PNG without one states no
+physical size at all. Every reader then supplies its own default, 72dpi in
+most of the Adobe tools and 96 in most Windows ones, and a 4-inch card places
+at over sixteen. `core/pngmeta.js` writes the chunk; `export.js`'s `encode()`
+is the only place it happens.
+
+`encode()` serves BOTH builds, and the LITE download went from `toDataURL` to
+a Blob to make that possible — the stamp works on bytes and a data URL has
+none to reach. Nothing about what LITE writes changes: its four square sizes
+have a null dpi, which `stampDpi` returns untouched, exactly as a document
+measured in pixels should. `pHYs` is quantised to whole pixels per metre, so
+300dpi stores as 11811 and reads back 299.9994; that is the format's
+precision, not a defect, and `tests/pngmeta.test.mjs` compares with a
+tolerance sized to it.
+
+**THE OVERLAY IS NON-PRINTING, AND THAT INCLUDES THE PANEL NAMES.** `FRONT`,
+`SPINE`, `BACK` and `FLAP n` are a fourth `kind` out of `panels.lines()`, sat
+in the margin band between each panel's leading edge and its safe line. Like
+the folds they are non-printing by never being asked for: `session.js` passes
+`panels` and `export.js` does not. A document with no panels is not labelled —
+`boxes()` calls the whole trim `PAGE` so the rest of that file needs no branch
+for a square, which is a convenience for the code and not a fact about the
+document.
+
 ## Commands
 
 ```

@@ -106,11 +106,18 @@
     }
 
     /**
-     * The non-printing overlay: the trim box, the folds, and the safe margin.
+     * The non-printing overlay: the trim box, the folds, the safe margin,
+     * and what each panel is called.
      *
-     * Three kinds because they mean three different things — a fold is where
-     * the card BENDS, a safe line is where a title stops being safe, and the
-     * trim is where the knife goes.
+     * Four kinds because they mean four different things — a fold is where
+     * the card BENDS, a safe line is where a title stops being safe, the
+     * trim is where the knife goes, and a label is which panel you are
+     * looking at.
+     *
+     * NOT ALL OF THEM ARE LINES, and that was already true before the labels:
+     * `trim` is a rectangle and carries no axis. The list is overlay ITEMS
+     * discriminated by `kind`, which is why ui/render.js switches on it
+     * rather than walking one shape.
      *
      * FOLDS ARE THE INTERNAL BOUNDARIES ONLY. Zero and the far edge are cuts,
      * not folds, and they are already the trim. The safe margin is inset from
@@ -132,6 +139,12 @@
             out.push({ kind: 'safe', axis: cross, at: crossLen - safe });
         }
 
+        /* A DOCUMENT WITH NO PANELS IS NOT LABELLED. boxes() answers with one
+           box called PAGE so that every function in this file works on a
+           square cover without a branch — but drawing the word PAGE across a
+           square album cover is noise about a distinction it does not have. */
+        const named = !!(m.panels && m.panels.length);
+
         for (const box of boxes(m)) {
             const lo = along === 'x' ? box.x : box.y;
             const len = along === 'x' ? box.w : box.h;
@@ -139,6 +152,24 @@
             if (safe > 0) {
                 out.push({ kind: 'safe', axis: along, at: lo + safe });
                 out.push({ kind: 'safe', axis: along, at: lo + len - safe });
+            }
+            /* THE NAME GOES IN THE MARGIN, not in the panel. Centred in the
+               band between the panel's leading edge and its safe line — the
+               strip a printer's template already reserves, and the one part
+               of a panel nothing worth covering is allowed to occupy.
+
+               Worth having because a J-card is otherwise unreadable as a
+               layout: a JP5 is eight stacked rectangles of which five are
+               flaps differing by a sixteenth of an inch, and nothing on
+               screen says which of them folds where. A point, not a line —
+               ui/render.js anchors the text at it. */
+            if (named) {
+                out.push({
+                    kind: 'label',
+                    name: box.name,
+                    x: along === 'x' ? lo + safe : safe,
+                    y: along === 'x' ? safe / 2 : lo + safe / 2,
+                });
             }
         }
         return out;

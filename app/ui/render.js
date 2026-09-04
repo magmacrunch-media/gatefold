@@ -423,7 +423,23 @@
     }
 
     /**
-     * The print overlay: the trim box, the folds, and the safe margin.
+     * How big a panel name is drawn.
+     *
+     * Scaled to the BAND it sits in rather than to the canvas, so the label
+     * cannot outgrow the space holding it: at 300dpi an eighth of an inch of
+     * safe margin is 37.5 dots and the name comes out 28. The chrome's own
+     * fixed 14px would be a fifth of that band on one document and illegible
+     * on another. Floored, because a format with no safe margin still has to
+     * put a readable number somewhere.
+     */
+    function labelSize(m) {
+        const band = m.safe || 0;
+        return Math.max(9, Math.round(band > 0 ? band * 0.75 : m.trim.w / 48));
+    }
+
+    /**
+     * The print overlay: the trim box, the folds, the safe margin, and the
+     * name of each panel.
      *
      * Under the selection chrome rather than over it, unlike the drag guides
      * — these are always on while a print format is open, and a permanent
@@ -450,6 +466,17 @@
         ctx.beginPath();
         for (const l of lines) if (l.kind === 'safe') spanLine(ctx, l, m);
         ctx.stroke();
+
+        /* The names last, so they read over the lines that bound them rather
+           than under. The dash has to be cleared first — it applies to text
+           drawn as a stroke, and leaving it set is the kind of state leak
+           this file passes its context around to avoid. */
+        ctx.setLineDash([]);
+        ctx.fillStyle = FOLD;
+        ctx.font = `${labelSize(m)}px "Courier Prime"`;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        for (const l of lines) if (l.kind === 'label') ctx.fillText(l.name, l.x, l.y);
 
         ctx.restore();
     }
