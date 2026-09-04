@@ -75,12 +75,43 @@ export default function (M) {
         for (const extra of [0, 1, 2, 3, 4, 5]) {
             const s = F.sizeOf('jcard-jp' + extra);
             eq(s.panels.length, 3 + extra, `JP${extra} panel count`);
-            for (let i = 3; i < s.panels.length; i++) {
+            /* THE CHAIN STARTS AT THE FRONT. Flap 1 is a sixteenth under
+               the FRONT panel — 2 1/2 in — and not under the BACK flap, which
+               is how reading Wikipedia's "the one before" wrong once made
+               every additional panel about an inch. */
+            if (extra >= 1) {
+                near(s.panels[0].len - s.panels[3].len, 1.5875,
+                    `JP${extra} flap 1 is a sixteenth under the front`);
+            }
+            for (let i = 4; i < s.panels.length; i++) {
                 near(s.panels[i - 1].len - s.panels[i].len, 1.5875,
-                    `JP${extra} flap ${i} is 1/16 in narrower than the one before it`);
+                    `JP${extra} flap ${i - 2} is 1/16 in narrower than the one before it`);
             }
             const sum = s.panels.reduce((t, p) => t + p.len, 0);
             near(s.trim.h, sum, `JP${extra} strip length is the sum of its panels`);
+        }
+    });
+
+    /* THE TABLE, CHECKED AGAINST CARDS SOMEBODY PRINTS. The flap sizes were
+       wrong for as long as they were derived from one sentence and never
+       compared with a real template: National Audio Company publish a 4-panel
+       J-card at 6.625 in and a 5-panel at 9.0625, which are JP1 and JP2, and
+       the old table made them 5.125 and 6.0625. Pinned in INCHES because that
+       is the unit every one of these templates is published in — a
+       millimetre figure here would be this file checking its own conversion
+       rather than its own numbers. */
+    test('JP1 and JP2 are the published 4- and 5-panel templates', () => {
+        const flat = (n) => F.sizeOf('jcard-jp' + n).trim.h / 25.4;
+        near(flat(0), 4.125, 'JP0, the plain card');
+        near(flat(1), 6.625, 'JP1 is the published 4-panel');
+        near(flat(2), 9.0625, 'JP2 is the published 5-panel');
+        near(flat(5), 16, 'and JP5 is exactly 16 in across the eight flaps');
+
+        /* The five additional panels, as duplication.com lists them. */
+        const flaps = F.jcardPanels(5).slice(3).map((p) => p.len / 25.4);
+        const want = [2.5, 2.4375, 2.375, 2.3125, 2.25];
+        for (let i = 0; i < want.length; i++) {
+            near(flaps[i], want[i], `flap ${i + 1} is ${want[i]} in`);
         }
     });
 
@@ -143,12 +174,14 @@ export default function (M) {
 
     /* Panel lengths are sixteenths of an inch stored as millimetres, so a
        strip comes back a hair either side of its exact value depending on
-       which panels were summed — and at 300dpi they land on exact HALF dots,
-       where Math.round changes its mind. Before metrics() settled the value
-       first, JP0 gave 1313 and JP1 gave 1612 from the same 0.5: two cards
-       from one table disagreeing about which way a half goes. */
+       which panels were summed: JP2's surface arrives as 2793.7499999999995
+       for an exact 2793.75, and JP4's as 4199.999999999999 for a whole 4200.
+       JP0 and JP1 land on exact HALF dots — 1312.5 and 2062.5 — which is
+       where Math.round changes its mind, so a half that arrived low would
+       round the other way from one that arrived high. Settling first throws
+       the drift away and keeps the half. */
     test('every J-card rounds its half-dot the same way', () => {
-        const expected = { 0: 1313, 1: 1613, 2: 1894, 3: 2156, 4: 2400, 5: 2625 };
+        const expected = { 0: 1313, 1: 2063, 2: 2794, 3: 3506, 4: 4200, 5: 4875 };
         for (const extra of [0, 1, 2, 3, 4, 5]) {
             const m = F.metrics(F.sizeOf('jcard-jp' + extra));
             eq(m.surface.w, 1275, `JP${extra} is always 4 in wide plus bleed`);

@@ -35,17 +35,36 @@
          front        2 9/16 in    65.0875
          spine        1/2 in       12.7
          back flap    1 1/16 in    26.9875
-         each further flap is 1/16 in NARROWER than the one before it, which
-         is why they nest when the card is folded rather than fouling
+         flap n       front - n/16 in — 2 1/2, 2 7/16, 2 3/8, 2 5/16, 2 1/4.
+                      Each is 1/16 in NARROWER than the one before it, which
+                      is why they nest when the card is folded rather than
+                      fouling
          bleed        1/8 in        3.175
          safe margin  1/8 in        3.175   from every cut AND every fold
 
+       THE FLAPS CHAIN FROM THE FRONT, NOT THE BACK, and this file had it the
+       other way. Wikipedia's sentence — "the other flaps are 1/16 inches less
+       than the one before" — reads either way in isolation, and reading "the
+       one before" as the BACK flap made every additional panel about an inch
+       where it should be about two and a half. A JP1 came out 5.125 in
+       against a real card's 6.625, so anything past JP0 was a template that
+       could not be cut or folded.
+
+       National Audio Company's production templates settle it, and they are
+       the reason these are numbers rather than a re-reading: their 4-panel
+       card is 6.625 in — 2.5625 + 2.5 + 1.0625 + 0.5 — and their 5-panel is
+       9.0625, adding 2.4375. Those are exactly JP0 plus front - n/16, so
+       JP1 and JP2 now reproduce the two published templates to the sixteenth.
+       duplication.com lists the same five additional panels as 2 1/2, 2 7/16,
+       2 3/8, 2 5/16 and 2 1/4, and JP5 comes to exactly 16 in across the
+       eight flaps Wikipedia describes. The old table made JP5 8.5 in and no
+       template anywhere agreed with it.
+
        Sources: en.wikipedia.org/wiki/J-card for the 1/16 in nesting rule and
-       that a card runs to eight panels; the CSS custom properties of
-       ed7n.github.io/jcard-template, which are the same numbers (it rounds
-       the front to 2.556 in); and duplication.com/printspecs, whose JP0..JP5
-       naming the ids below follow — JP0 is a plain J-card and JPn is a
-       J-card plus n additional panels.
+       that a card runs to eight panels; National Audio Company's 3-, 4- and
+       5-panel J-card templates for the panel measurements; and
+       duplication.com/printspecs, whose JP0..JP5 naming the ids below follow
+       — JP0 is a plain J-card and JPn is a J-card plus n additional panels.
 
        THE U-CARD IS DELIBERATELY ABSENT. The sources describe it and none of
        them publish its dimensions, and a guessed print template is worse than
@@ -69,8 +88,11 @@
             { name: 'SPINE', len: JCARD.spine },
             { name: 'BACK', len: JCARD.back },
         ];
+        /* front, not back — see the header. The first additional panel is a
+           sixteenth under the FRONT flap, and each one after that a sixteenth
+           under its predecessor. */
         for (let i = 1; i <= extra; i++) {
-            panels.push({ name: 'FLAP ' + i, len: JCARD.back - i * JCARD.step });
+            panels.push({ name: 'FLAP ' + i, len: JCARD.front - i * JCARD.step });
         }
         return panels;
     }
@@ -223,10 +245,13 @@
      * THE SETTLE BEFORE THE ROUND IS LOAD-BEARING. A card's panel lengths are
      * sixteenths of an inch stored as millimetres, so the strip comes back a
      * hair under or over its exact value depending on which panels were
-     * summed — and at 300dpi these land on exact HALF dots, right where
-     * Math.round changes its mind. Measured: JP0's 1312.5 rounds up to 1313
-     * while JP1's 1612.5 arrives as 1612.4999999999998 and rounds DOWN, so
-     * two cards from one table disagree about which way a half goes. Settling
+     * summed — and at 300dpi several land on exact HALF dots, right where
+     * Math.round changes its mind. Measured: JP0 and JP1 are exact halves at
+     * 1312.5 and 2062.5, while JP2 arrives as 2793.7499999999995 for an exact
+     * 2793.75 and JP4 as 4199.999999999999 for a whole 4200. A half that
+     * arrived low would round the other way from one that arrived high, so
+     * two cards from one table would disagree about which way a half goes.
+     * Settling
      * to six decimals first throws away the drift and keeps the half, which
      * makes the surface a function of the dimensions rather than of the order
      * they were added in.
