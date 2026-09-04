@@ -229,4 +229,63 @@ export default function (M) {
     test('a square cover is not labelled PAGE', () => {
         eq(P.lines(SQUARE).filter((x) => x.kind === 'label').length, 0, 'nothing to name');
     });
+
+    /* ── a safe margin without panels ── */
+
+    /* A record jacket is one face with a quarter inch of safety: no folds to
+       draw and nothing to name, but a safe rectangle that is the whole reason
+       to turn the overlay on. ui/menu.js asks exactly this question to decide
+       whether the View item is dead, having previously asked for the panel
+       count and been right only because no such format existed yet. */
+    test('a jacket has a safe rectangle to draw, and no folds or names', () => {
+        const LP = F.metrics(F.sizeOf('lp-12'));
+        const l = P.lines(LP);
+        eq(l.filter((x) => x.kind === 'fold').length, 0, 'one face does not bend');
+        eq(l.filter((x) => x.kind === 'label').length, 0, 'and has no panel to name');
+        eq(l.filter((x) => x.kind === 'safe').length, 4, 'but four safe lines, a rectangle');
+        ok(l.some((x) => x.kind !== 'trim'), 'so the overlay is worth offering');
+    });
+
+    test('a square has nothing to offer, which is what makes the test honest', () => {
+        ok(!P.lines(SQUARE).some((x) => x.kind !== 'trim'),
+            'nothing but the trim, which is the canvas edge');
+    });
+
+    /* ── panels that run across ── */
+
+    test('a tray card boxes left to right, full height, in order', () => {
+        const TRAY = F.metrics(F.sizeOf('cd-tray'));
+        const b = P.boxes(TRAY);
+        eq(b.map((x) => x.name), ['SPINE', 'BACK', 'SPINE'], 'in order');
+        for (const box of b) {
+            eq(box.y, 0, `${box.name} runs the full height`);
+            near(box.h, TRAY.trim.h, 'top to bottom');
+        }
+        eq(b[0].x, 0, 'the first spine starts at the cut');
+        near(b[1].x, b[0].w, 'the back starts where it ends');
+        near(b[2].x, b[1].x + b[1].w, 'and the far spine after that');
+        near(b[2].x + b[2].w, TRAY.trim.w, 'ending exactly at the trim');
+
+        const folds = P.lines(TRAY).filter((x) => x.kind === 'fold');
+        eq(folds.length, 2, 'two folds, one either side of the back');
+        eq(folds.every((f) => f.axis === 'x'), true, 'across the card, not down it');
+    });
+
+    /* A panel can be narrower than its own name. This file reports the space
+       and ui/render.js measures against it, because measuring needs a ctx. */
+    test('a label knows how much room it has', () => {
+        const TRAY = F.metrics(F.sizeOf('cd-tray'));
+        const room = {};
+        for (const l of P.lines(TRAY).filter((x) => x.kind === 'label')) {
+            room[l.name] = l.room;
+        }
+        eq(room.SPINE, 0, 'a quarter-inch spine has none: 75 dots less two safe margins');
+        ok(room.BACK > 1500, `the back tray has plenty, got ${room.BACK}`);
+
+        /* A stacked card reads across its full width, so its names always
+           fit and this can never take one away. */
+        for (const l of P.lines(JP0).filter((x) => x.kind === 'label')) {
+            near(l.room, JP0.trim.w - 37.5 * 2, `${l.name} gets the full width`);
+        }
+    });
 }

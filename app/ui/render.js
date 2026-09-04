@@ -482,7 +482,19 @@
         ctx.font = `${labelSize(m)}px "Courier Prime"`;
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
-        for (const l of lines) if (l.kind === 'label') ctx.fillText(l.name, l.x, l.y);
+        for (const l of lines) {
+            if (l.kind !== 'label') continue;
+            /* NO NAME IS BETTER THAN AN OVERLAPPING ONE. core/panels.js hands
+               over how much room the name has; measuring it is this file's
+               job because it is the side of the split that owns a ctx. A CD
+               tray card's quarter-inch spines lose their labels here and
+               BACK keeps its, which is the honest outcome — the two narrow
+               panels at the ends of a tray card are self-evidently the
+               spines, and SPINE printed over BACK tells you less than
+               nothing. */
+            if (l.room != null && ctx.measureText(l.name).width > l.room) continue;
+            ctx.fillText(l.name, l.x, l.y);
+        }
 
         ctx.restore();
     }

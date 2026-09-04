@@ -115,6 +115,89 @@ export default function (M) {
         }
     });
 
+    /* ── the CD jewel case ── */
+
+    /* PINNED IN BOTH UNITS, because the published spec is exact in each and
+       they are not exact conversions of one another: 6.35 + 137.8 + 6.35 is
+       150.5 in millimetres and 0.25 + 5.425 + 0.25 is 5.925 in inches, but
+       150.5mm is 5.92520in. The vendor rounded. Five microns is six
+       hundredths of a dot at 300dpi and cannot survive dots(), so both
+       readings are correct and the test says so rather than picking one and
+       pretending the other does not exist. */
+    test('the tray card is a back between two spines, and they sum exactly', () => {
+        const s = F.sizeOf('cd-tray');
+        eq(s.panels.map((p) => p.name), ['SPINE', 'BACK', 'SPINE'], 'left to right');
+        eq(s.panelAxis, 'x', 'and it reads across, not down');
+        near(s.panels[0].len, 6.35, 'a quarter inch of spine');
+        near(s.panels[1].len, 137.8, 'the back tray');
+        near(s.panels[2].len, 6.35, 'and the same spine again');
+
+        const sum = s.panels.reduce((t, p) => t + p.len, 0);
+        near(sum, 150.5, 'the three of them are the card, in millimetres');
+        near(s.trim.w, sum, 'which is what the trim says');
+        /* The published inch column is 0.25 + 5.425 + 0.25 = 5.925, and it is
+           NOT the exact conversion of the millimetre one: 150.5mm is 5.92520in.
+           The tolerance here is that rounding — five microns, six hundredths of
+           a dot at 300dpi — stated outright rather than hidden inside a loose
+           near(). */
+        const inches = s.panels.reduce((t, p) => t + p.len / 25.4, 0);
+        ok(Math.abs(inches - 5.925) < 0.0005,
+            `and 5.925 in inches to the vendor own rounding, got ${inches}`);
+        near(s.trim.h, 117.5, '117.5mm tall');
+    });
+
+    test('a booklet spread is exactly two pages, with no allowance between them', () => {
+        const page = F.sizeOf('cd-front');
+        const spread = F.sizeOf('cd-spread');
+        near(page.trim.w / 25.4, 4.75, 'a page is 4.75 in wide');
+        near(page.trim.h, 119.855, 'and 119.855mm tall');
+        eq(page.panels, undefined, 'one page has nothing to fold');
+
+        near(spread.trim.w, page.trim.w * 2, 'the spread is two of them');
+        near(spread.trim.w / 25.4, 9.5, 'which is the published 9.5 in');
+        near(spread.trim.h, page.trim.h, 'and no taller than one page');
+        eq(spread.panels.map((p) => p.name), ['LEFT', 'RIGHT'],
+            'named by side, since which pages these are depends on the sheet');
+    });
+
+    /* ── the record jacket ── */
+
+    /* THE FIRST FORMAT WITH A SAFE MARGIN AND NO PANELS. Every earlier one
+       had either both or neither, which is why ui/menu.js could gate the
+       guides overlay on the panel count and be right by accident. */
+    test('a 12-inch jacket is a square with a quarter inch of safety', () => {
+        const s = F.sizeOf('lp-12');
+        near(s.trim.w / 25.4, 12.375, '12 3/8 in wide');
+        near(s.trim.h / 25.4, 12.375, 'and the same tall');
+        near(s.bleed / 25.4, 0.125, 'an eighth of bleed, as everything here has');
+        near(s.safe / 25.4, 0.25, 'but a QUARTER inch of safe margin, which is its own');
+        eq(s.panels, undefined, 'one face, nothing to fold');
+        eq(s.panelAxis, undefined, 'and no axis to fold along');
+    });
+
+    /* ── the registry ── */
+
+    /* ui/sizes.js writes a heading whenever the group changes as it walks
+       this list, so a group split in two would print its heading twice and
+       the picker would show CD, VINYL, CD. */
+    test('each group is contiguous, and in the order the picker shows them', () => {
+        const runs = [];
+        for (const f of F.FORMATS) {
+            if (runs[runs.length - 1] !== f.group) runs.push(f.group);
+        }
+        eq(runs, ['SQUARE', 'CASSETTE', 'CD', 'VINYL'], 'one run per group');
+        eq(runs.length, new Set(F.FORMATS.map((f) => f.group)).size,
+            'no group appears in two places');
+    });
+
+    test('every id is unique and every print format is FULL', () => {
+        const ids = F.FORMATS.map((f) => f.id);
+        eq(ids.length, new Set(ids).size, 'no id is claimed twice');
+        for (const f of F.FORMATS) {
+            eq(f.tier, f.group === 'SQUARE' ? 'lite' : 'full', `${f.id} tier`);
+        }
+    });
+
     /* ── the tiers ── */
 
     test('the squares are the four that are live today, and they stay LITE', () => {

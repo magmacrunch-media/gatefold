@@ -162,13 +162,26 @@
                layout: a JP5 is eight stacked rectangles of which five are
                flaps differing by a sixteenth of an inch, and nothing on
                screen says which of them folds where. A point, not a line —
-               ui/render.js anchors the text at it. */
+               ui/render.js anchors the text at it.
+
+               `room` IS HOW MUCH SPACE THE NAME HAS, and it is here because a
+               panel can be narrower than its own name: a CD tray card's
+               spines are a quarter inch, 75 dots at 300dpi, where the word
+               SPINE wants about 85 and lands on top of BACK. This file cannot
+               decide that — measuring text needs a ctx, which is the line
+               between core/ and ui/ — so it reports the space and
+               ui/render.js measures the name against it and draws nothing
+               when it will not fit. A stacked card's labels read across the
+               full width and always fit; only a format whose panels run
+               ACROSS can be too narrow for its own name. */
             if (named) {
+                const extent = along === 'x' ? len : m.trim.w;
                 out.push({
                     kind: 'label',
                     name: box.name,
                     x: along === 'x' ? lo + safe : safe,
                     y: along === 'x' ? safe / 2 : lo + safe / 2,
+                    room: Math.max(0, extent - safe * 2),
                 });
             }
         }

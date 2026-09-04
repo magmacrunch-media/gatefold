@@ -116,6 +116,136 @@
         };
     }
 
+    /* ── the CD jewel case, in millimetres ────────────────
+       THE FIRST FORMATS WHOSE PANELS RUN ACROSS. A J-card stacks so its front
+       reads right-way-up; a tray card is SPINE | BACK | SPINE left to right,
+       and a booklet spread is two pages side by side. Both are panelAxis 'x',
+       which core/panels.js, core/marks.js and ui/render.js have all
+       implemented since print formats landed and nothing had yet used.
+
+         booklet page   120.65 x 119.855   4.75 x 4.719 in
+         4-page spread  241.3  x 119.855   exactly two pages, no allowance
+         tray card      150.5  x 117.5     5.925 x 4.626 in
+           spine          6.35             1/4 in, and there are two of them
+           back tray    137.8              5.425 in
+         bleed            3.175            1/8 in
+         safe             3.175            1/8 in
+
+       The tray card's three panels sum exactly, in both units: 6.35 + 137.8 +
+       6.35 = 150.5, and 0.25 + 5.425 + 0.25 = 5.925. The two are not exact
+       conversions of one another — the vendor rounded, and 150.5mm is
+       5.92520in — but they disagree by five microns, which is six hundredths
+       of a dot at 300dpi and cannot survive the rounding in dots() anyway.
+       MILLIMETRES ARE PRIMARY here, as they are for every mm format in this
+       file.
+
+       Sources: Copycats Media's CD template specifications, which publish the
+       tray card and booklet in both units and are self-consistent in each;
+       duplication.com's rule that every paper item carries 1/8 in of bleed
+       and 1/8 in of safety margin. The 5pt minimum type size those specs also
+       carry is not represented — this file describes geometry, and a type
+       floor is advice about content.
+
+       DIGIPAKS AND WALLETS ARE ABSENT for the U-card's reason: the panel
+       counts are published and the panel MEASUREMENTS are not. */
+    const CD = {
+        page: { w: 120.65, h: 119.855 },
+        tray: { w: 150.5, h: 117.5 },
+        spine: 6.35,
+        back: 137.8,
+        bleed: inch(1 / 8),
+        safe: inch(1 / 8),
+    };
+
+    /** One booklet page: the 1-panel insert, and the cover of any booklet. */
+    function cdPageSize() {
+        return {
+            unit: 'mm',
+            trim: { w: CD.page.w, h: CD.page.h },
+            bleed: CD.bleed, safe: CD.safe, dpi: DEFAULT_DPI,
+        };
+    }
+
+    /**
+     * The flat sheet of a 4-page booklet: two pages, one fold.
+     *
+     * ONE SPREAD IS ONE DOCUMENT. A 4-page booklet is a single sheet printed
+     * both sides, so it is two of these — the outer carrying the back and
+     * front covers, the inner carrying pages 2 and 3. Anything longer needs
+     * imposition, which decides which page prints beside which across several
+     * sheets, and that is a different program to this one: the artboard here
+     * is one flat surface with one elements list.
+     *
+     * The panels are LEFT and RIGHT rather than named after page numbers,
+     * because which pages these are depends on which side of the sheet is
+     * being drawn and this file cannot know that.
+     */
+    function cdSpreadSize() {
+        return {
+            unit: 'mm',
+            trim: { w: CD.page.w * 2, h: CD.page.h },
+            bleed: CD.bleed, safe: CD.safe, dpi: DEFAULT_DPI,
+            panelAxis: 'x',
+            panels: [
+                { name: 'LEFT', len: CD.page.w },
+                { name: 'RIGHT', len: CD.page.w },
+            ],
+        };
+    }
+
+    /** The tray card: the back cover, with a spine at each end. */
+    function cdTraySize() {
+        return {
+            unit: 'mm',
+            trim: { w: CD.tray.w, h: CD.tray.h },
+            bleed: CD.bleed, safe: CD.safe, dpi: DEFAULT_DPI,
+            panelAxis: 'x',
+            /* Two panels called SPINE, which is not a mistake: a tray card has
+               one at each end and they are read from opposite sides of the
+               case. */
+            panels: [
+                { name: 'SPINE', len: CD.spine },
+                { name: 'BACK', len: CD.back },
+                { name: 'SPINE', len: CD.spine },
+            ],
+        };
+    }
+
+    /* ── the 12-inch record jacket ────────────────────────
+       ONE FACE, NO FOLDS. A jacket face is a plain square with a bleed, which
+       makes it the first format here that has a safe margin and no panels at
+       all — core/panels.js answers with its one PAGE box and draws the safe
+       rectangle, and core/marks.js gives it crop marks and no fold ticks,
+       both without a branch.
+
+         jacket   12 3/8 in    314.325   front and back are the same square
+         bleed    1/8 in         3.175
+         safe     1/4 in         6.35    TWICE every other format here
+
+       The safe margin is the one number that is not this file's usual 1/8 in,
+       and it is not a slip: a record jacket is a glued paper wrap whose edges
+       move more than a trimmed card's, and the vinyl specs published for it
+       ask for a quarter inch.
+
+       THE GATEFOLD IS ABSENT, which is a shame in this program of all
+       programs. Its spine width depends on the thickness of the records
+       inside, so there is no single number: published flat sizes run from
+       24.75 to 25 in and one manufacturer quotes 13 x 12.375 for a panel.
+       That is a job specification, not a format. */
+    const LP = {
+        jacket: inch(12.375),
+        bleed: inch(1 / 8),
+        safe: inch(1 / 4),
+    };
+
+    function lpJacketSize() {
+        return {
+            unit: 'mm',
+            trim: { w: LP.jacket, h: LP.jacket },
+            bleed: LP.bleed, safe: LP.safe, dpi: DEFAULT_DPI,
+        };
+    }
+
     /* Kept identical to core/gatefold.js's, because the registry is now where
        the four squares come from and the two must not drift. */
     function squareSize(px) {
@@ -163,7 +293,18 @@
                 tier: 'full',
                 size: function () { return jcardSize(extra); },
             };
-        })
+        }),
+        /* Same-group entries MUST stay contiguous: ui/sizes.js writes a
+           heading whenever the group changes as it walks this list, so a
+           split group would print its heading twice. */
+        [
+            { id: 'cd-front', label: 'FRONT', size: cdPageSize },
+            { id: 'cd-spread', label: '4PP', size: cdSpreadSize },
+            { id: 'cd-tray', label: 'TRAY', size: cdTraySize },
+        ].map(function (e) {
+            return { id: e.id, group: 'CD', label: e.label, tier: 'full', size: e.size };
+        }),
+        [{ id: 'lp-12', group: 'VINYL', label: '12IN', tier: 'full', size: lpJacketSize }]
     );
 
     function byId(id) {
@@ -323,11 +464,17 @@
         DEFAULT_SIZE_PX: DEFAULT_SIZE_PX,
         SQUARE_SIZES: SQUARE_SIZES,
         JCARD: JCARD,
+        CD: CD,
+        LP: LP,
         FORMATS: FORMATS,
         inch: inch,
         squareSize: squareSize,
         jcardPanels: jcardPanels,
         jcardSize: jcardSize,
+        cdPageSize: cdPageSize,
+        cdSpreadSize: cdSpreadSize,
+        cdTraySize: cdTraySize,
+        lpJacketSize: lpJacketSize,
         byId: byId,
         sizeOf: sizeOf,
         sameSize: sameSize,

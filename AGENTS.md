@@ -222,6 +222,38 @@ the folds they are non-printing by never being asked for: `session.js` passes
 for a square, which is a convenience for the code and not a fact about the
 document.
 
+## Panels that run across, and names that do not fit
+
+The CD tray card and the 4-page booklet spread are the first formats whose
+panels run **across** rather than stacking: `panelAxis: 'x'`, which
+`core/panels.js`, `core/marks.js` and `ui/render.js` had all implemented since
+print formats landed and nothing had used. A 12-inch record jacket is the
+other new shape — a safe margin with **no panels at all**, which is why
+`menu.js` no longer gates the guides overlay on the panel count. It asks what
+the overlay would actually draw, because a jacket has a quarter inch of safe
+margin and no folds, and the old test called that nothing.
+
+**A panel can be narrower than its own name.** A tray card's spines are a
+quarter inch — 75 dots at 300dpi, where the word SPINE wants about 85 and
+lands on top of BACK. `panels.lines()` reports a `room` on every label and
+`render.js` measures the name against it, drawing nothing when it will not
+fit, because measuring text needs a `ctx` and that is the line between `core/`
+and `ui/`. A tray card therefore labels BACK and leaves its spines bare, which
+is the honest outcome: the two narrow panels at the ends are self-evidently
+the spines, and SPINE printed over BACK tells you less than nothing.
+
+Formats are pinned to published manufacturer templates, **in the unit the
+template publishes**. The CD tray card is exact in both millimetres and inches
+and the two are not exact conversions of each other — the vendor rounded, and
+they differ by five microns — so `formats.test.mjs` asserts both and states
+that rounding as the tolerance rather than picking one column and pretending
+the other does not exist.
+
+What is deliberately missing stays missing: the U-card (panel order and
+hub-hole geometry unpublished), digipaks and wallets (panel counts published,
+panel measurements not), and the LP gatefold, whose spine width depends on how
+many records are inside — a job specification, not a format.
+
 ## Commands
 
 ```

@@ -85,11 +85,17 @@
                 checked: App.export.marksOn(),
                 disabled: !App.marks.wanted(App.formats.metrics(App.gatefold.get().size)),
             };
-            /* Dead on a square cover, which has no folds and no safe margin
-               to show — the item would tick on and change nothing. */
+            /* Dead when the overlay would draw nothing but the trim, which
+               is the canvas edge and says nothing. That is the square covers.
+               It was gated on the PANEL COUNT, which was the same test right
+               up until a record jacket arrived: one face, no folds, and a
+               quarter inch of safe margin that is the whole reason to want
+               the overlay on. Ask what there is to draw, not what shape the
+               document is. */
             case 'view:print-guides': return {
                 checked: App.session.panelLinesOn(),
-                disabled: !App.formats.metrics(App.gatefold.get().size).panels.length,
+                disabled: !App.panels.lines(App.formats.metrics(App.gatefold.get().size))
+                    .some(function (l) { return l.kind !== 'trim'; }),
             };
             default: return null;   // the kit falls back to data-toggles
         }
